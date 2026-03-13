@@ -1361,13 +1361,19 @@ function CustomerDetailView({ customer, onUpdate, tiers }) {
       {customer.milestones.map(l0=><div key={l0.id} style={{flex:1,background:"#1e2230",borderRadius:"3px",overflow:"hidden"}} title={`${l0.label}: ${RAG_LABELS[l0.rag]} (${getL0Progress(l0)}%)`}><div style={{width:`${getL0Progress(l0)}%`,height:"100%",background:RAG_COLORS[l0.rag],borderRadius:"3px",transition:"width 0.4s"}} /></div>)}
     </div>
 
-    <div className="tabs">
+ <div className="tabs">
+      {/* Group 1: Core Project Tracking */}
       <button className={`tab ${tab==="plan"?"active":""}`} onClick={()=>setTab("plan")}>Plan</button>
       <button className={`tab ${tab==="milestones"?"active":""}`} onClick={()=>setTab("milestones")}>Milestones</button>
+      <button className={`tab ${tab==="rids"?"active":""}`} onClick={()=>setTab("rids")}>RIDs ({(customer.rids||[]).filter(r=>r.status!=="Closed").length})</button>
+      
+      {/* Visual Separator */}
+      <div style={{ width: "1px", background: "#2e3348", margin: "4px 6px", borderRadius: "1px" }} />
+      
+      {/* Group 2: Communications & History */}
       <button className={`tab ${tab==="transcripts"?"active":""}`} onClick={()=>setTab("transcripts")}>Transcripts ({customer.transcripts.length})</button>
       <button className={`tab ${tab==="weekly"?"active":""}`} onClick={()=>setTab("weekly")}>Weekly Update</button>
       <button className={`tab ${tab==="history"?"active":""}`} onClick={()=>setTab("history")}>History ({customer.weeklyUpdates.length})</button>
-      <button className={`tab ${tab==="rids"?"active":""}`} onClick={()=>setTab("rids")}>RIDs ({(customer.rids||[]).filter(r=>r.status!=="Closed").length})</button>
     </div>
 
     {/* ── PLAN ── */}
