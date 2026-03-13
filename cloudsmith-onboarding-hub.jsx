@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+const { useState, useEffect } = React;
 
 const FONT_LINK = "https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=JetBrains+Mono:wght@400;500&display=swap";
 
@@ -1206,7 +1206,7 @@ function CustomerDetailView({ customer, onUpdate, tiers }) {
 }
 
 // ─── App ───
-export default function App() {
+function App() {
   const [customers,setCustomers]=useState(SAMPLES);
   const [view,setView]=useState("dashboard");
   const [selId,setSelId]=useState(null);
@@ -1268,3 +1268,7 @@ export default function App() {
     {showAdd&&<AddCustomerModal onClose={()=>setShowAdd(false)} onAdd={nc=>{setCustomers([...customers,nc]);setShowAdd(false);setSelId(nc.id);setView("customer");}} tmpl={tmpl} tiers={tiers} />}
   </div>;
 }
+
+// Tell React to render the app inside the <div id="root"> from our index.html
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(<App />);
