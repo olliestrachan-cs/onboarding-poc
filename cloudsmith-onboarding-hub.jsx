@@ -205,10 +205,17 @@ const SAMPLES = [
 // ─── Derivation ───
 function deriveL0Rag(ch, fb) { if(!ch.length) return fb; if(ch.some(c=>c.rag==="red")) return "red"; if(ch.some(c=>c.rag==="amber")) return "amber"; if(ch.some(c=>c.rag==="green")) return "green"; return "blue"; }
 function deriveL0Status(ch, fb) { if(!ch.length) return fb; if(ch.every(c=>c.status==="complete")) return "complete"; if(ch.some(c=>c.status==="in-progress"||c.status==="complete")) return "in-progress"; return "upcoming"; }
-function deriveCustomerRag(ms) { if(ms.some(m=>m.rag==="red"||m.children.some(c=>c.rag==="red"))) return "red"; if(ms.some(m=>m.rag==="amber"||m.children.some(c=>c.rag==="amber"))) return "amber"; if(ms.some(m=>m.rag==="green"||m.children.some(c=>c.rag==="green"))) return "green"; return "blue"; }
+function deriveCustomerRag(ms) { 
+  const active = ms.filter(m => !m.isNA);
+  if(!active.length) return "blue";
+  if(active.some(m=>m.rag==="red"||m.children.some(c=>c.rag==="red"))) return "red"; 
+  if(active.some(m=>m.rag==="amber"||m.children.some(c=>c.rag==="amber"))) return "amber"; 
+  if(active.some(m=>m.rag==="green"||m.children.some(c=>c.rag==="green"))) return "green"; 
+  return "blue"; 
+}
 
-// ADD THIS NEW FUNCTION:
 function syncL0(l0) {
+  if (l0.isNA) return l0; // Skip syncing dates if N/A
   if (!l0.children || !l0.children.length) return l0;
   let minStart = null, maxEnd = null;
   l0.children.forEach(c => {
@@ -225,8 +232,12 @@ function syncL0(l0) {
 }
 
 function getL0Progress(l0) { if(!l0.children.length) return l0.status==="complete"?100:l0.status==="in-progress"?50:0; return Math.round((l0.children.filter(c=>c.status==="complete").length/l0.children.length)*100); }
-function getTotalProgress(ms) { const a=ms.flatMap(l=>l.children.length?l.children:[l]); const d=a.filter(i=>i.status==="complete").length; return a.length?Math.round((d/a.length)*100):0; }
-
+function getTotalProgress(ms) { 
+  const active = ms.filter(m => !m.isNA);
+  const a=active.flatMap(l=>l.children.length?l.children:[l]); 
+  const d=a.filter(i=>i.status==="complete").length; 
+  return a.length?Math.round((d/a.length)*100):0; 
+}
 function fmtDate(d) { if(!d) return "\u2014"; return new Date(d).toLocaleDateString("en-GB",{day:"numeric",month:"short"}); }
 function fmtRange(sd, ed) { if(!sd && !ed) return "\u2014"; if(sd && ed) return `${fmtDate(sd)} \u2013 ${fmtDate(ed)}`; return fmtDate(sd || ed); }
 function weeksBetween(a,b) { return Math.ceil((new Date(b)-new Date(a))/(7*24*60*60*1000)); }
@@ -624,6 +635,8 @@ function EditMilestoneModal({ item, isL0, onClose, onSave, allMilestones }) {
   const [ed,setEd]=useState(item.endDate||"");
   const [ptg,setPtg]=useState(item.pathToGreen||"");
   const [deps,setDeps]=useState(item.dependsOn||[]);
+  const [isNA,setIsNA]=useState(item.isNA||false);
+
   const canEdit = !isL0 || !(item.children?.length > 0);
   const depOptions = !isL0 && allMilestones ? getAllL1Options(allMilestones, item.id) : [];
 
@@ -635,54 +648,67 @@ function EditMilestoneModal({ item, isL0, onClose, onSave, allMilestones }) {
         {isL0 && <span style={{fontSize:"11px",color:"#565b6e",marginRight:"8px"}}>L0 PHASE</span>}
         {item.label}
       </div>
-      {isL0 && item.children?.length > 0 && <p style={{fontSize:"12px",color:"#6b7088",marginBottom:"14px"}}>Completion status and RAG are auto-derived from sub-milestones. You can still set dates, notes, and the Path to Green.</p>}
 
-      {canEdit && (
-        <div className="form-group"><label className="form-label">Completion Status</label>
-          <select className="input select-input" value={status} onChange={e=>setStatus(e.target.value)}>
-            <option value="upcoming">Upcoming</option><option value="in-progress">In Progress</option><option value="complete">Complete</option>
-          </select>
+      {isL0 && (
+        <div className="form-group" style={{background:"rgba(255,255,255,0.03)",padding:"12px",borderRadius:"8px",border:"1px solid #1e2230"}}>
+          <label style={{display:"flex",alignItems:"center",gap:"8px",cursor:"pointer"}}>
+            <input type="checkbox" checked={isNA} onChange={e=>setIsNA(e.target.checked)} style={{width:"16px",height:"16px"}} />
+            <span style={{fontSize:"13px",color:"#e2e4eb",fontWeight:500}}>Mark phase as Not Applicable (N/A)</span>
+          </label>
+          <div style={{fontSize:"11px",color:"#6b7088",marginTop:"4px",marginLeft:"24px"}}>This will exclude the phase from overall progress and RAG calculations.</div>
         </div>
       )}
 
-      <div className="form-row">
-        <div className="form-group"><label className="form-label">Start Date</label><input className="input" type="date" value={sd} onChange={e=>setSd(e.target.value)} /></div>
-        <div className="form-group"><label className="form-label">End Date</label><input className="input" type="date" value={ed} onChange={e=>setEd(e.target.value)} /></div>
-      </div>
+      {!isNA && (
+        <>
+          {isL0 && item.children?.length > 0 && <p style={{fontSize:"12px",color:"#6b7088",marginBottom:"14px"}}>Completion status and RAG are auto-derived from sub-milestones. You can still set dates, notes, and the Path to Green.</p>}
 
-      {canEdit && (
-        <div className="form-group"><label className="form-label">RAG Status</label><RagSelector value={rag} onChange={setRag} /></div>
-      )}
+          {canEdit && (
+            <div className="form-group"><label className="form-label">Completion Status</label>
+              <select className="input select-input" value={status} onChange={e=>setStatus(e.target.value)}>
+                <option value="upcoming">Upcoming</option><option value="in-progress">In Progress</option><option value="complete">Complete</option>
+              </select>
+            </div>
+          )}
 
-      {/* Show PTG for amber/red — for L0 with children, show based on derived rag even though selector is hidden */}
-      {(rag === "amber" || rag === "red") && (
-        <div className="form-group">
-          <label className="form-label" style={{color:RAG_COLORS[rag]}}>Path to Green {rag==="red"?"(Required)":"(Recommended)"}</label>
-          <textarea className="textarea" value={ptg} onChange={e=>setPtg(e.target.value)} placeholder={"What actions are needed to get back to Green?\ne.g. 1) Escalate blocker to VP Eng\n2) Reschedule training"} style={{borderColor:rag==="red"&&!ptg.trim()?"#ef4444":undefined}} />
-        </div>
-      )}
-
-      {!isL0 && depOptions.length > 0 && (
-        <div className="form-group">
-          <label className="form-label">Depends On (select predecessors)</label>
-          <div style={{maxHeight:"140px",overflowY:"auto",border:"1px solid #2e3348",borderRadius:"7px",background:"#181b26"}}>
-            {depOptions.map(opt=>{
-              const sel = deps.includes(opt.id);
-              return <div key={opt.id} onClick={()=>toggleDep(opt.id)} style={{display:"flex",alignItems:"center",gap:"8px",padding:"7px 12px",cursor:"pointer",background:sel?"rgba(99,102,241,0.08)":"transparent",transition:"background 0.12s",borderBottom:"1px solid #1a1d28"}}>
-                <span style={{width:"14px",height:"14px",borderRadius:"3px",border:sel?"2px solid #6366f1":"2px solid #2e3348",background:sel?"#6366f1":"none",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"9px",color:"white",flexShrink:0}}>{sel?"\u2713":""}</span>
-                <span style={{fontSize:"12px",color:sel?"#c5c8d6":"#8b8fa3"}}>{opt.label}</span>
-                <span style={{fontSize:"10px",color:"#464b5e",marginLeft:"auto"}}>{opt.phase}</span>
-              </div>;
-            })}
+          <div className="form-row">
+            <div className="form-group"><label className="form-label">Start Date</label><input className="input" type="date" value={sd} onChange={e=>setSd(e.target.value)} /></div>
+            <div className="form-group"><label className="form-label">End Date</label><input className="input" type="date" value={ed} onChange={e=>setEd(e.target.value)} /></div>
           </div>
-          {deps.length>0&&<div style={{fontSize:"10px",color:"#565b6e",marginTop:"4px"}}>{deps.length} dependency{deps.length>1?"ies":""} selected — start date will shift if predecessor end dates change</div>}
-        </div>
+
+          {canEdit && (
+            <div className="form-group"><label className="form-label">RAG Status</label><RagSelector value={rag} onChange={setRag} /></div>
+          )}
+
+          {(rag === "amber" || rag === "red") && (
+            <div className="form-group">
+              <label className="form-label" style={{color:RAG_COLORS[rag]}}>Path to Green {rag==="red"?"(Required)":"(Recommended)"}</label>
+              <textarea className="textarea" value={ptg} onChange={e=>setPtg(e.target.value)} placeholder={"What actions are needed to get back to Green?"} style={{borderColor:rag==="red"&&!ptg.trim()?"#ef4444":undefined}} />
+            </div>
+          )}
+
+          {!isL0 && depOptions.length > 0 && (
+            <div className="form-group">
+              <label className="form-label">Depends On (select predecessors)</label>
+              <div style={{maxHeight:"140px",overflowY:"auto",border:"1px solid #2e3348",borderRadius:"7px",background:"#181b26"}}>
+                {depOptions.map(opt=>{
+                  const sel = deps.includes(opt.id);
+                  return <div key={opt.id} onClick={()=>toggleDep(opt.id)} style={{display:"flex",alignItems:"center",gap:"8px",padding:"7px 12px",cursor:"pointer",background:sel?"rgba(99,102,241,0.08)":"transparent",transition:"background 0.12s",borderBottom:"1px solid #1a1d28"}}>
+                    <span style={{width:"14px",height:"14px",borderRadius:"3px",border:sel?"2px solid #6366f1":"2px solid #2e3348",background:sel?"#6366f1":"none",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"9px",color:"white",flexShrink:0}}>{sel?"\u2713":""}</span>
+                    <span style={{fontSize:"12px",color:sel?"#c5c8d6":"#8b8fa3"}}>{opt.label}</span>
+                    <span style={{fontSize:"10px",color:"#464b5e",marginLeft:"auto"}}>{opt.phase}</span>
+                  </div>;
+                })}
+              </div>
+            </div>
+          )}
+        </>
       )}
 
       <div className="form-group"><label className="form-label">Notes</label><textarea className="textarea" value={notes} onChange={e=>setNotes(e.target.value)} placeholder="General notes..." style={{minHeight:"80px"}} /></div>
 
       <div className="modal-actions"><button className="btn btn-ghost" onClick={onClose}>Cancel</button>
-        <button className="btn btn-primary" onClick={()=>onSave({...item, notes, status, rag, startDate:sd||null, endDate:ed||null, pathToGreen:(rag==="green"||rag==="blue")?"":ptg, dependsOn:deps})}>Save</button>
+        <button className="btn btn-primary" onClick={()=>onSave({...item, isNA, notes, status: isNA ? "complete" : status, rag: isNA ? "blue" : rag, startDate:sd||null, endDate:ed||null, pathToGreen:(rag==="green"||rag==="blue"||isNA)?"":ptg, dependsOn:deps})}>Save</button>
       </div>
     </div></div>
   );
@@ -1047,10 +1073,12 @@ function CustomerGantt({ customer, showProgress = true }) {
   let yAccum = headerH;
   customer.milestones.forEach(l0 => {
     yAccum += l0RowH; // L0 row
-    l0.children.forEach(l1 => {
-      yAccum += l1RowH;
-    });
-    if (l0.children.length === 0) yAccum += 4; // spacer
+    if (!l0.isNA) {
+      l0.children.forEach(l1 => {
+        yAccum += l1RowH;
+      });
+      if (l0.children.length === 0) yAccum += 4; // spacer
+    }
   });
   const totalH = yAccum;
 
@@ -1068,29 +1096,36 @@ function CustomerGantt({ customer, showProgress = true }) {
         const barLeft = hasSpan ? l0Start : (l0i / customer.milestones.length) * 100;
         const barRight = hasSpan ? l0End : ((l0i+1) / customer.milestones.length) * 100;
         const barW = Math.max(1, barRight - barLeft);
-        const prog = getL0Progress(l0);
+        const prog = l0.isNA ? 0 : getL0Progress(l0);
         const fillW = barW * (prog / 100);
 
-        return <div key={l0.id} className="cgantt-l0-group">
+        return <div key={l0.id} className="cgantt-l0-group" style={{ opacity: l0.isNA ? 0.5 : 1 }}>
           <div className="cgantt-l0-row">
             <div className="cgantt-l0-label">
               <span className="rag-dot rag-dot-sm" style={{background:RAG_COLORS[l0.rag]}} />
               <span className="cgantt-l0-num">{l0i+1}</span>
-              <span className="cgantt-l0-name">{l0.label}</span>
+              <span className="cgantt-l0-name" style={{textDecoration: l0.isNA ? "line-through" : "none"}}>{l0.label}</span>
+              {l0.isNA && <span style={{marginLeft:"6px",fontSize:"9px",padding:"1px 4px",background:"#2e3348",borderRadius:"3px",color:"#c5c8d6",fontWeight:600}}>N/A</span>}
             </div>
             <div className="cgantt-l0-track">
+              {/* Always draw the vertical week lines */}
               {weeks.map(w=><div key={w} className="cgantt-l0-track-cell" />)}
-              {showProgress ? <>
-                {fillW > 0 && <div className="cgantt-l0-bar-fill" style={{left:`${barLeft}%`,width:`${fillW}%`,background:RAG_COLORS[l0.rag],opacity:0.55,borderRadius: (barW - fillW) > 0.5 ? "4px 0 0 4px" : "4px"}} />}
-                {(barW - fillW) > 0.5 && <div className="cgantt-l0-bar" style={{left:`${barLeft + fillW}%`,width:`${barW - fillW}%`,background:"#1e2230",borderRadius: fillW > 0 ? "0 4px 4px 0" : "4px"}} />}
-              </> : <>
-                <div className="cgantt-l0-bar-fill" style={{left:`${barLeft}%`,width:`${barW}%`,background:RAG_COLORS[l0.rag],opacity:0.55,borderRadius:"4px"}} />
-              </>}
+              
+              {/* Only draw the bars if the milestone is NOT marked as N/A */}
+              {!l0.isNA && (
+                showProgress ? <>
+                  {fillW > 0 && <div className="cgantt-l0-bar-fill" style={{left:`${barLeft}%`,width:`${fillW}%`,background:RAG_COLORS[l0.rag],opacity:0.55,borderRadius: (barW - fillW) > 0.5 ? "4px 0 0 4px" : "4px"}} />}
+                  {(barW - fillW) > 0.5 && <div className="cgantt-l0-bar" style={{left:`${barLeft + fillW}%`,width:`${barW - fillW}%`,background:"#1e2230",borderRadius: fillW > 0 ? "0 4px 4px 0" : "4px"}} />}
+                </> : <>
+                  <div className="cgantt-l0-bar-fill" style={{left:`${barLeft}%`,width:`${barW}%`,background:RAG_COLORS[l0.rag],opacity:0.55,borderRadius:"4px"}} />
+                </>
+              )}
+              
               {todayPct>0&&todayPct<100&&<div className="cgantt-today" style={{left:`${todayPct}%`}}>{l0i===0&&<span className="cgantt-today-label">Today</span>}</div>}
             </div>
           </div>
 
-          {l0.children.map(l1=>{
+          {!l0.isNA && l0.children.map(l1=>{
             const l1S = pct(l1.startDate);
             const l1E = pct(l1.endDate);
             const hasL1Span = l1S !== null && l1E !== null;
@@ -1112,7 +1147,7 @@ function CustomerGantt({ customer, showProgress = true }) {
               </div>
             </div>;
           })}
-          {l0.children.length===0&&<div className="cgantt-l1-row" style={{height:"4px"}} />}
+          {(!l0.isNA && l0.children.length===0) && <div className="cgantt-l1-row" style={{height:"4px"}} />}
         </div>;
       })}
     </div></div></div>
@@ -1305,7 +1340,31 @@ function CustomerDetailView({ customer, onUpdate, tiers }) {
   const handleEditSave=(updated)=>{
     let ms;
     if(editIsL0){
-      ms=customer.milestones.map(m=>m.id===updated.id?{...m,notes:updated.notes,startDate:updated.startDate,endDate:updated.endDate,pathToGreen:updated.pathToGreen,...(m.children.length===0?{status:updated.status,rag:updated.rag}:{})}:m);
+      ms=customer.milestones.map(m=>{
+        if(m.id!==updated.id) return m;
+        
+        // Explicitly include isNA along with the other fields!
+        const newL0 = {
+          ...m,
+          isNA: updated.isNA,
+          notes: updated.notes,
+          startDate: updated.startDate,
+          endDate: updated.endDate,
+          pathToGreen: updated.pathToGreen
+        };
+        
+        // If it's N/A, we force it to complete/blue so it doesn't affect calculations.
+        // Otherwise, if it has no children, we accept the manual status/rag from the modal.
+        if (updated.isNA) {
+          newL0.status = "complete";
+          newL0.rag = "blue";
+        } else if (m.children.length === 0) {
+          newL0.status = updated.status;
+          newL0.rag = updated.rag;
+        }
+        
+        return newL0;
+      });
     } else {
       // Find old endDate for cascading
       let oldEndDate = null;
@@ -1373,9 +1432,12 @@ function CustomerDetailView({ customer, onUpdate, tiers }) {
       </div>
     </div>
 
-    {/* Phase RAG bar */}
+{/* Phase RAG bar */}
     <div style={{display:"flex",gap:"3px",marginBottom:"24px",height:"6px"}}>
-      {customer.milestones.map(l0=><div key={l0.id} style={{flex:1,background:"#1e2230",borderRadius:"3px",overflow:"hidden"}} title={`${l0.label}: ${RAG_LABELS[l0.rag]} (${getL0Progress(l0)}%)`}><div style={{width:`${getL0Progress(l0)}%`,height:"100%",background:RAG_COLORS[l0.rag],borderRadius:"3px",transition:"width 0.4s"}} /></div>)}
+      {customer.milestones.map(l0=>{
+        if (l0.isNA) return <div key={l0.id} style={{flex:1,background:"#1e2230",borderRadius:"3px",opacity:0.5}} title={`${l0.label}: N/A`} />;
+        return <div key={l0.id} style={{flex:1,background:"#1e2230",borderRadius:"3px",overflow:"hidden"}} title={`${l0.label}: ${RAG_LABELS[l0.rag]} (${getL0Progress(l0)}%)`}><div style={{width:`${getL0Progress(l0)}%`,height:"100%",background:RAG_COLORS[l0.rag],borderRadius:"3px",transition:"width 0.4s"}} /></div>
+      })}
     </div>
 
  <div className="tabs">
@@ -1414,34 +1476,39 @@ function CustomerDetailView({ customer, onUpdate, tiers }) {
     {/* ── MILESTONES ── */}
     {tab==="milestones"&&<div>
       {customer.milestones.map((l0,l0i)=>{
-        const open=expanded.has(l0i); const prog=getL0Progress(l0);
-        return <div key={l0.id} className="l0-phase" style={{animationDelay:`${l0i*0.05}s`,borderColor:(l0.rag==="amber"||l0.rag==="red")?`${RAG_COLORS[l0.rag]}30`:undefined}}>
+        const open=expanded.has(l0i); 
+        const prog=l0.isNA ? 100 : getL0Progress(l0);
+        return <div key={l0.id} className="l0-phase" style={{animationDelay:`${l0i*0.05}s`,borderColor:(l0.rag==="amber"||l0.rag==="red")&&!l0.isNA?`${RAG_COLORS[l0.rag]}30`:undefined, opacity: l0.isNA ? 0.6 : 1}}>
           <button className="l0-header" onClick={()=>setExpanded(p=>{const n=new Set(p);n.has(l0i)?n.delete(l0i):n.add(l0i);return n;})}>
-            <button className={`milestone-check ${l0.status}`} onClick={e=>{e.stopPropagation();cycleL0Status(l0i);}} title={l0.children.length?"Auto-derived":"Click to cycle"}><StatusIcon status={l0.status} /></button>
+            <button className={`milestone-check ${l0.isNA ? 'complete' : l0.status}`} onClick={e=>{e.stopPropagation();if(!l0.isNA) cycleL0Status(l0i);}} disabled={l0.isNA} title={l0.isNA?"Not Applicable":l0.children.length?"Auto-derived":"Click to cycle"}><StatusIcon status={l0.isNA?"complete":l0.status} /></button>
             <div className="l0-label">
               <span className="phase-num">{l0i+1}</span>
-              {l0.label}
-              {l0.children.length>0&&<span style={{fontSize:"11px",color:"#565b6e"}}>({l0.children.filter(c=>c.status==="complete").length}/{l0.children.length})</span>}
+              <span style={{textDecoration: l0.isNA ? "line-through" : "none"}}>{l0.label}</span>
+              {l0.isNA && <span style={{marginLeft:"8px",fontSize:"10px",padding:"2px 6px",background:"#2e3348",borderRadius:"4px",color:"#c5c8d6",fontWeight:600}}>N/A</span>}
+              {l0.children.length>0 && !l0.isNA && <span style={{fontSize:"11px",color:"#565b6e"}}>({l0.children.filter(c=>c.status==="complete").length}/{l0.children.length})</span>}
             </div>
-            <div style={{display:"flex",alignItems:"center",gap:"8px"}}>
-              <div className="l0-progress-bar" style={{width:"60px"}}><div className="l0-progress-fill" style={{width:`${prog}%`,background:RAG_COLORS[l0.rag]}} /></div>
-              <span style={{fontSize:"11px",color:"#8b8fa3",fontFamily:"'JetBrains Mono',monospace",minWidth:"28px"}}>{prog}%</span>
-            </div>
-            <span className={`status-pill status-${l0.status}`}>{l0.status.replace("-"," ")}</span>
-            <RagPill rag={l0.rag} small onClick={e=>{e.stopPropagation();if(!l0.children.length){save(customer.milestones.map((m,i)=>i===l0i?{...m,rag:nextRag(m.rag)}:m));}}} />
+            {!l0.isNA ? (
+              <div style={{display:"flex",alignItems:"center",gap:"8px"}}>
+                <div className="l0-progress-bar" style={{width:"60px"}}><div className="l0-progress-fill" style={{width:`${prog}%`,background:RAG_COLORS[l0.rag]}} /></div>
+                <span style={{fontSize:"11px",color:"#8b8fa3",fontFamily:"'JetBrains Mono',monospace",minWidth:"28px"}}>{prog}%</span>
+              </div>
+            ) : <div style={{width:"60px"}} />}
+            {!l0.isNA ? <span className={`status-pill status-${l0.status}`}>{l0.status.replace("-"," ")}</span> : <span style={{width:"76px"}} />}
+            {!l0.isNA ? <RagPill rag={l0.rag} small onClick={e=>{e.stopPropagation();if(!l0.children.length){save(customer.milestones.map((m,i)=>i===l0i?{...m,rag:nextRag(m.rag)}:m));}}} /> : <span style={{width:"70px"}} />}
             <span className={`l0-chevron ${open?"open":""}`}>{"\u25B8"}</span>
           </button>
 
-          {(l0.rag==="amber"||l0.rag==="red")&&<div className={`ptg-bar ptg-bar-${l0.rag}`} style={{cursor:"pointer"}} onClick={()=>{setEditItem(l0);setEditIsL0(true);}} title="Click to edit Path to Green">
+          {(l0.rag==="amber"||l0.rag==="red")&&!l0.isNA&&<div className={`ptg-bar ptg-bar-${l0.rag}`} style={{cursor:"pointer"}} onClick={()=>{setEditItem(l0);setEditIsL0(true);}} title="Click to edit Path to Green">
             <span className="ptg-label">Path to Green:</span>
             <span className="ptg-text">{l0.pathToGreen||<span style={{fontStyle:"italic",opacity:0.6}}>Click to set path to green...</span>}</span>
           </div>}
 
           {open&&<div className="l1-container">
+            {l0.isNA && <div style={{padding:"8px 10px 14px 32px",fontSize:"12.5px",color:"#8b8fa3",fontStyle:"italic"}}>This phase is marked as Not Applicable and is excluded from progress calculations.</div>}
             {l0.notes&&<div style={{padding:"6px 10px 10px 32px",fontSize:"12px",color:"#6b7088",fontStyle:"italic"}}>{l0.notes}</div>}
-            {/* L0 date range */}
-            {(l0.startDate||l0.endDate)&&<div style={{padding:"2px 10px 8px 32px",fontSize:"11px",color:"#464b5e",fontFamily:"'JetBrains Mono',monospace"}}>{fmtRange(l0.startDate,l0.endDate)}</div>}
-            {l0.children.map(l1=><div key={l1.id}>
+            {(l0.startDate||l0.endDate)&&!l0.isNA&&<div style={{padding:"2px 10px 8px 32px",fontSize:"11px",color:"#464b5e",fontFamily:"'JetBrains Mono',monospace"}}>{fmtRange(l0.startDate,l0.endDate)}</div>}
+            
+            {!l0.isNA && l0.children.map(l1=><div key={l1.id}>
               <div className="l1-row">
                 <button className={`milestone-check sm ${l1.status}`} onClick={()=>cycleL1Status(l0i,l1.id)}><StatusIcon status={l1.status} /></button>
                 <span className="l1-name" style={{opacity:l1.status==="complete"?0.55:1,textDecoration:l1.status==="complete"?"line-through":"none"}}>{l1.label}</span>
@@ -1456,17 +1523,12 @@ function CustomerDetailView({ customer, onUpdate, tiers }) {
                   <button style={{background:"none",border:"none",color:"#464b5e",cursor:"pointer",fontSize:"12px",padding:"2px 6px"}} onClick={()=>rmL1(l0i,l1.id)}>{"\u2715"}</button>
                 </div>
               </div>
-              {(l1.rag==="amber"||l1.rag==="red")&&l1.pathToGreen&&<div className={`ptg-bar-l1 ptg-bar-${l1.rag}`}><span className="ptg-label" style={{fontSize:"9px"}}>P2G:</span><span className="ptg-text">{l1.pathToGreen}</span></div>}
-              {(l1.dependsOn||[]).length > 0 && <div style={{padding:"2px 10px 4px 54px",display:"flex",gap:"4px",alignItems:"center",flexWrap:"wrap"}}>
-                <span style={{fontSize:"9px",fontWeight:600,color:"#6366f1",textTransform:"uppercase",letterSpacing:"0.5px"}}>Depends on:</span>
-                {l1.dependsOn.map(depId=><span key={depId} style={{fontSize:"10.5px",color:"#818cf8",background:"rgba(99,102,241,0.08)",padding:"1px 6px",borderRadius:"3px"}}>{l1Lookup[depId]||depId}</span>)}
-              </div>}
             </div>)}
-            {addingL1===l0i?<div className="inline-add">
+            {!l0.isNA && (addingL1===l0i?<div className="inline-add">
               <input className="input" value={newL1} onChange={e=>setNewL1(e.target.value)} placeholder="Sub-milestone name..." autoFocus onKeyDown={e=>{if(e.key==="Enter")addL1Item(l0i);if(e.key==="Escape"){setAddingL1(null);setNewL1("");}}} style={{flex:1}} />
               <button className="btn btn-primary btn-sm" onClick={()=>addL1Item(l0i)}>Add</button>
               <button className="btn btn-ghost btn-sm" onClick={()=>{setAddingL1(null);setNewL1("");}}>Cancel</button>
-            </div>:<button className="add-l1-btn" onClick={()=>setAddingL1(l0i)}>+ Add sub-milestone</button>}
+            </div>:<button className="add-l1-btn" onClick={()=>setAddingL1(l0i)}>+ Add sub-milestone</button>)}
             <div style={{padding:"4px 10px 2px 32px"}}><button style={{background:"none",border:"none",color:"#464b5e",fontSize:"11px",cursor:"pointer",fontFamily:"'DM Sans',sans-serif"}} onClick={()=>{setEditItem(l0);setEditIsL0(true);}}>Edit phase details</button></div>
           </div>}
         </div>;
