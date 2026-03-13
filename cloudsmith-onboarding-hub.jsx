@@ -12,121 +12,193 @@ const DEFAULT_L0 = [
 ];
 
 const DEFAULT_TIERS = [
-  { id: "t1", label: "Enterprise", color: "#a78bfa" },
-  { id: "t2", label: "Growth", color: "#38bdf8" },
-  { id: "t3", label: "Starter", color: "#8b8fa3" },
+  { id: "t1", label: "Strategic", color: "#a78bfa" },
+  { id: "t2", label: "Enterprise", color: "#38bdf8" },
+  { id: "t3", label: "Ultra", color: "#f59e0b" },
 ];
 
 const RAG_LABELS = { green: "Green", amber: "Amber", red: "Red", blue: "Blue" };
 const RAG_COLORS = { green: "#22c55e", amber: "#f59e0b", red: "#ef4444", blue: "#3b82f6" };
 
-function mkL1(id, label, status, rag, sd, ed, notes, ptg) {
-  return { id, label, status: status||"upcoming", rag: rag||"green", startDate: sd||null, endDate: ed||null, notes: notes||"", pathToGreen: ptg||"" };
+function mkL1(id, label, status, rag, sd, ed, notes, ptg, deps) {
+  return { id, label, status: status||"upcoming", rag: rag||"green", startDate: sd||null, endDate: ed||null, notes: notes||"", pathToGreen: ptg||"", dependsOn: deps||[] };
+}
+
+const RID_TYPES = ["Risk", "Issue", "Dependency"];
+const RID_SEVERITIES = ["Low", "Medium", "High", "Critical"];
+const RID_STATUSES = ["Open", "Mitigated", "Closed"];
+const RID_SEV_COLORS = { Low: "#565b6e", Medium: "#f59e0b", High: "#ef4444", Critical: "#dc2626" };
+
+function mkRid(id, type, title, severity, status, linkedMilestone, owner, description, mitigation) {
+  return { id, type: type||"Risk", title, severity: severity||"Medium", status: status||"Open", linkedMilestone: linkedMilestone||null, owner: owner||"", description: description||"", mitigation: mitigation||"", createdDate: new Date().toISOString().split("T")[0] };
 }
 
 function mkCustomerMilestones(tmpl) {
   return tmpl.map(l0 => ({ ...l0, status: "upcoming", rag: "green", startDate: null, endDate: null, notes: "", pathToGreen: "", children: [] }));
 }
 
-// ─── Samples with realistic overlapping dates ───
+// ─── Samples with realistic 6-12 month onboarding timelines ───
 const SAMPLES = [
   {
-    id: "c1", name: "Acme Corp", logo: "AC", tier: "Enterprise",
-    startDate: "2025-12-01", targetDate: "2026-03-15",
-    baselineCompletion: "2026-03-15", forecastCompletion: "2026-03-22",
+    id: "c1", name: "Acme Corp", logo: "AC", tier: "Strategic",
+    startDate: "2025-07-01", targetDate: "2026-04-30",
+    baselineCompletion: "2026-03-31", forecastCompletion: "2026-04-30",
     onboardingManager: "You",
     owner: "You",
     stakeholder: "Jamie Chen (VP Eng)",
     milestones: [
-      { ...DEFAULT_L0[0], status: "complete", rag: "green", startDate: "2025-12-01", endDate: "2025-12-05", notes: "Strong alignment on goals", pathToGreen: "", children: [
-        mkL1("c1-1", "Intro & stakeholder mapping", "complete", "green", "2025-12-01", "2025-12-03"),
-        mkL1("c1-2", "Define success criteria", "complete", "green", "2025-12-03", "2025-12-05", "ARR protection + time-to-value targets"),
+      { ...DEFAULT_L0[0], status: "complete", rag: "blue", startDate: "2025-07-01", endDate: "2025-07-18", notes: "Strong alignment on goals", pathToGreen: "", children: [
+        mkL1("c1-1", "Intro & stakeholder mapping", "complete", "blue", "2025-07-01", "2025-07-07"),
+        mkL1("c1-2", "Define success criteria", "complete", "blue", "2025-07-07", "2025-07-14", "ARR protection + time-to-value targets"),
+        mkL1("c1-3", "Onboarding charter sign-off", "complete", "blue", "2025-07-14", "2025-07-18"),
       ]},
-      { ...DEFAULT_L0[1], status: "complete", rag: "green", startDate: "2025-12-06", endDate: "2025-12-20", notes: "Full audit done", pathToGreen: "", children: [
-        mkL1("c1-3", "Current tooling audit", "complete", "green", "2025-12-06", "2025-12-10", "Artifactory + S3 buckets"),
-        mkL1("c1-4", "Package format inventory", "complete", "green", "2025-12-10", "2025-12-15", "npm, Docker, Maven, Helm"),
-        mkL1("c1-5", "Compliance & access review", "complete", "green", "2025-12-15", "2025-12-20", "SOC2 requirements documented"),
+      { ...DEFAULT_L0[1], status: "complete", rag: "blue", startDate: "2025-07-21", endDate: "2025-09-12", notes: "Full audit done", pathToGreen: "", children: [
+        mkL1("c1-4", "Current tooling audit", "complete", "blue", "2025-07-21", "2025-08-08", "Artifactory + S3 buckets + legacy Nexus"),
+        mkL1("c1-5", "Package format inventory", "complete", "blue", "2025-08-04", "2025-08-22", "npm, Docker, Maven, Helm, PyPI"),
+        mkL1("c1-6", "Compliance & access review", "complete", "blue", "2025-08-18", "2025-09-05", "SOC2 requirements documented"),
+        mkL1("c1-7", "Network & firewall assessment", "complete", "blue", "2025-08-25", "2025-09-12", "Egress rules for air-gapped environments"),
       ]},
-      { ...DEFAULT_L0[2], status: "complete", rag: "green", startDate: "2025-12-21", endDate: "2026-01-15", notes: "SSO + repos configured", pathToGreen: "", children: [
-        mkL1("c1-6", "SSO / SAML setup", "complete", "green", "2025-12-21", "2026-01-05"),
-        mkL1("c1-7", "Repository structure design", "complete", "green", "2026-01-02", "2026-01-10", "Mono-repo per team"),
-        mkL1("c1-8", "Upstream proxy configuration", "complete", "green", "2026-01-10", "2026-01-15"),
+      { ...DEFAULT_L0[2], status: "complete", rag: "green", startDate: "2025-09-15", endDate: "2025-11-28", notes: "SSO + repos configured", pathToGreen: "", children: [
+        mkL1("c1-8", "SSO / SAML setup", "complete", "green", "2025-09-15", "2025-10-03"),
+        mkL1("c1-9", "Repository structure design", "complete", "green", "2025-09-22", "2025-10-17", "Mono-repo per team, 12 teams"),
+        mkL1("c1-10", "Upstream proxy configuration", "complete", "green", "2025-10-13", "2025-11-07"),
+        mkL1("c1-11", "Retention & cleanup policies", "complete", "green", "2025-10-27", "2025-11-14"),
+        mkL1("c1-12", "Vulnerability scanning setup", "complete", "green", "2025-11-10", "2025-11-28"),
       ]},
-      { ...DEFAULT_L0[3], status: "in-progress", rag: "amber", startDate: "2026-01-13", endDate: "2026-02-28", notes: "GitHub Actions done, Jenkins WIP", pathToGreen: "Need infra team to unblock Jenkins access by Feb 20", children: [
-        mkL1("c1-9", "npm migration (150 packages)", "complete", "green", "2026-01-13", "2026-01-25"),
-        mkL1("c1-10", "Docker image migration", "in-progress", "green", "2026-01-20", "2026-02-14", "80/120 images moved"),
-        mkL1("c1-11", "Maven artifact migration", "upcoming", "green", "2026-02-10", "2026-02-25"),
-        mkL1("c1-12", "CI/CD pipeline rewiring", "in-progress", "amber", "2026-01-25", "2026-02-28", "GH Actions done, Jenkins WIP", "Escalate to Acme infra team lead re: Jenkins credentials"),
+      { ...DEFAULT_L0[3], status: "in-progress", rag: "amber", startDate: "2025-11-17", endDate: "2026-03-28", notes: "GitHub Actions done, Jenkins WIP", pathToGreen: "Need infra team to unblock Jenkins access by end of March. Escalation path via VP Eng.", children: [
+        mkL1("c1-13", "npm migration (150 packages)", "complete", "green", "2025-11-17", "2025-12-19"),
+        mkL1("c1-14", "Docker image migration", "complete", "green", "2025-12-01", "2026-01-16", "320 images migrated"),
+        mkL1("c1-15", "Maven artifact migration", "in-progress", "green", "2026-01-06", "2026-03-07", "180/240 artifacts moved"),
+        mkL1("c1-16", "PyPI package migration", "in-progress", "green", "2026-02-03", "2026-03-14"),
+        mkL1("c1-17", "Helm chart migration", "upcoming", "green", "2026-03-03", "2026-03-21"),
+        mkL1("c1-18", "CI/CD pipeline rewiring", "in-progress", "amber", "2026-01-20", "2026-03-28", "GH Actions done, Jenkins WIP", "Escalate to Acme infra team lead re: Jenkins credentials"),
       ]},
-      // Rollout overlaps with Artifact Migration
-      { ...DEFAULT_L0[4], status: "upcoming", rag: "green", startDate: "2026-02-15", endDate: "2026-03-10", notes: "", pathToGreen: "", children: [
-        mkL1("c1-13", "Pilot team rollout", "upcoming", "green", "2026-02-15", "2026-02-22"),
-        mkL1("c1-14", "Full org rollout", "upcoming", "green", "2026-02-22", "2026-03-05"),
-        mkL1("c1-15", "Training sessions", "upcoming", "green", "2026-02-25", "2026-03-10"),
+      // Rollout overlaps with tail of Artifact Migration
+      { ...DEFAULT_L0[4], status: "upcoming", rag: "green", startDate: "2026-03-02", endDate: "2026-04-18", notes: "", pathToGreen: "", children: [
+        mkL1("c1-19", "Pilot team rollout (Platform team)", "upcoming", "green", "2026-03-02", "2026-03-21"),
+        mkL1("c1-20", "Wave 2 rollout (Backend teams)", "upcoming", "green", "2026-03-17", "2026-04-04", "", "", ["c1-19"]),
+        mkL1("c1-21", "Wave 3 rollout (Frontend + Mobile)", "upcoming", "green", "2026-03-31", "2026-04-11", "", "", ["c1-20"]),
+        mkL1("c1-22", "Training sessions (4 cohorts)", "upcoming", "green", "2026-03-10", "2026-04-18", "", "", ["c1-19"]),
       ]},
-      { ...DEFAULT_L0[5], status: "upcoming", rag: "green", startDate: "2026-03-05", endDate: "2026-03-15", notes: "", pathToGreen: "", children: [
-        mkL1("c1-16", "Legacy read-only period", "upcoming", "green", "2026-03-05", "2026-03-12"),
-        mkL1("c1-17", "Artifactory shutdown", "upcoming", "green", "2026-03-12", "2026-03-15"),
+      { ...DEFAULT_L0[5], status: "upcoming", rag: "green", startDate: "2026-04-07", endDate: "2026-04-30", notes: "", pathToGreen: "", children: [
+        mkL1("c1-23", "Legacy read-only period", "upcoming", "green", "2026-04-07", "2026-04-21", "", "", ["c1-21"]),
+        mkL1("c1-24", "Artifactory shutdown", "upcoming", "green", "2026-04-21", "2026-04-28", "", "", ["c1-23"]),
+        mkL1("c1-25", "Post-migration audit", "upcoming", "green", "2026-04-25", "2026-04-30", "", "", ["c1-24"]),
       ]},
     ],
     transcripts: [
-      { id: "t1", date: "2025-12-03", title: "Kickoff Call", summary: "Discussed timeline, key stakeholders, and success metrics. Jamie wants full migration by Q1 end.", text: "Full transcript of kickoff call..." },
-      { id: "t2", date: "2026-01-10", title: "Migration Review", summary: "Reviewed repo migration progress. 150/200 repos done. Blockers around legacy Artifactory configs.", text: "Full transcript of migration review..." },
-      { id: "t3", date: "2026-02-05", title: "CI/CD Check-in", summary: "GitHub Actions pipelines complete. Jenkins integration has dependency on their infra team's availability. Target mid-Feb.", text: "Full transcript of CI/CD check-in..." },
+      { id: "t1", date: "2025-07-03", title: "Kickoff Call", summary: "Discussed timeline, key stakeholders, and success metrics. Jamie wants full migration within 9 months. 12 engineering teams to onboard.", text: "Full transcript of kickoff call..." },
+      { id: "t2", date: "2025-09-18", title: "Configuration Review", summary: "SSO integration started. Repository structure agreed — mono-repo per team. Discussed upstream proxy requirements for air-gapped dev environments.", text: "Full transcript of configuration review..." },
+      { id: "t3", date: "2026-01-22", title: "Migration Progress Review", summary: "npm and Docker migrations complete. Maven in progress. Jenkins pipeline rewiring blocked on infra team credentials — escalation needed.", text: "Full transcript of migration review..." },
+      { id: "t4", date: "2026-03-06", title: "CI/CD Check-in", summary: "GitHub Actions pipelines complete. Jenkins integration has dependency on their infra team's availability. Targeting end of March.", text: "Full transcript of CI/CD check-in..." },
     ],
     weeklyUpdates: [],
+    rids: [
+      { id: "r1-1", type: "Issue", title: "Jenkins credentials blocked by infra team", severity: "High", status: "Open", linkedMilestone: "c1-18", owner: "Jamie Chen", description: "Infra team has not provisioned Jenkins service account credentials. Blocking CI/CD pipeline rewiring for all Jenkins-based teams.", mitigation: "Escalate to VP Eng. Fallback: migrate Jenkins pipelines to GitHub Actions.", createdDate: "2026-01-28" },
+      { id: "r1-2", type: "Risk", title: "Air-gapped environment proxy latency", severity: "Medium", status: "Mitigated", linkedMilestone: "c1-10", owner: "You", description: "Upstream proxy configuration in air-gapped environments may introduce latency for Docker image pulls.", mitigation: "Configured regional cache nodes. Monitoring latency during pilot rollout.", createdDate: "2025-10-15" },
+      { id: "r1-3", type: "Dependency", title: "Helm chart migration requires K8s 1.28+", severity: "Medium", status: "Open", linkedMilestone: "c1-17", owner: "Jamie Chen", description: "Helm chart migration tooling requires Kubernetes 1.28 or higher. Two teams are on 1.26.", mitigation: "K8s upgrade scheduled for March. If delayed, manual chart migration as fallback.", createdDate: "2026-02-10" },
+      { id: "r1-4", type: "Risk", title: "Training capacity for 4 cohorts", severity: "Low", status: "Open", linkedMilestone: "c1-22", owner: "You", description: "Scheduling 4 training cohorts across 12 teams may conflict with Q2 sprint commitments.", mitigation: "Pre-book training slots in March. Offer async self-serve option as alternative.", createdDate: "2026-02-20" },
+    ],
   },
   {
-    id: "c2", name: "NovaTech", logo: "NT", tier: "Growth",
-    startDate: "2026-01-15", targetDate: "2026-04-30",
-    baselineCompletion: "2026-04-30", forecastCompletion: "2026-04-30",
+    id: "c2", name: "NovaTech", logo: "NT", tier: "Ultra",
+    startDate: "2025-10-06", targetDate: "2026-06-30",
+    baselineCompletion: "2026-06-30", forecastCompletion: "2026-06-30",
     onboardingManager: "You",
     owner: "You",
     stakeholder: "Sam Rivera (DevOps Lead)",
     milestones: [
-      { ...DEFAULT_L0[0], status: "complete", rag: "green", startDate: "2026-01-15", endDate: "2026-01-17", notes: "Small team, fast-moving", pathToGreen: "", children: [
-        mkL1("c2-1", "Kickoff & goals alignment", "complete", "green", "2026-01-15", "2026-01-17"),
+      { ...DEFAULT_L0[0], status: "complete", rag: "blue", startDate: "2025-10-06", endDate: "2025-10-17", notes: "Small team, fast-moving", pathToGreen: "", children: [
+        mkL1("c2-1", "Kickoff & goals alignment", "complete", "blue", "2025-10-06", "2025-10-10"),
+        mkL1("c2-2", "Success criteria & timeline", "complete", "blue", "2025-10-10", "2025-10-17"),
       ]},
-      { ...DEFAULT_L0[1], status: "complete", rag: "green", startDate: "2026-01-18", endDate: "2026-01-25", notes: "", pathToGreen: "", children: [
-        mkL1("c2-2", "Tooling audit", "complete", "green", "2026-01-18", "2026-01-22", "Just npm + Docker"),
+      { ...DEFAULT_L0[1], status: "complete", rag: "blue", startDate: "2025-10-20", endDate: "2025-11-21", notes: "Lean stack, straightforward", pathToGreen: "", children: [
+        mkL1("c2-3", "Tooling audit", "complete", "blue", "2025-10-20", "2025-11-07", "Just npm + Docker currently"),
+        mkL1("c2-4", "Workflow & permissions mapping", "complete", "blue", "2025-11-03", "2025-11-21"),
       ]},
-      { ...DEFAULT_L0[2], status: "in-progress", rag: "green", startDate: "2026-01-25", endDate: "2026-02-15", notes: "30 repos, straightforward", pathToGreen: "", children: [
-        mkL1("c2-3", "Repo setup", "complete", "green", "2026-01-25", "2026-02-05"),
-        mkL1("c2-4", "API token provisioning", "in-progress", "green", "2026-02-05", "2026-02-15"),
+      { ...DEFAULT_L0[2], status: "complete", rag: "green", startDate: "2025-11-24", endDate: "2026-01-17", notes: "30 repos configured", pathToGreen: "", children: [
+        mkL1("c2-5", "Repo setup & structure", "complete", "green", "2025-11-24", "2025-12-12"),
+        mkL1("c2-6", "API token provisioning", "complete", "green", "2025-12-08", "2025-12-19"),
+        mkL1("c2-7", "Webhook & notification config", "complete", "green", "2026-01-06", "2026-01-17"),
       ]},
-      { ...DEFAULT_L0[3], status: "upcoming", rag: "green", startDate: "2026-02-15", endDate: "2026-03-20", notes: "", pathToGreen: "", children: [] },
-      { ...DEFAULT_L0[4], status: "upcoming", rag: "green", startDate: "2026-03-15", endDate: "2026-04-20", notes: "", pathToGreen: "", children: [] },
-      { ...DEFAULT_L0[5], status: "upcoming", rag: "green", startDate: "2026-04-15", endDate: "2026-04-30", notes: "", pathToGreen: "", children: [] },
+      { ...DEFAULT_L0[3], status: "in-progress", rag: "green", startDate: "2026-01-13", endDate: "2026-04-11", notes: "npm done, Docker in progress", pathToGreen: "", children: [
+        mkL1("c2-8", "npm package migration", "complete", "green", "2026-01-13", "2026-02-14"),
+        mkL1("c2-9", "Docker image migration", "in-progress", "green", "2026-02-10", "2026-03-21", "60/95 images migrated"),
+        mkL1("c2-10", "CI/CD pipeline updates", "upcoming", "green", "2026-03-10", "2026-04-11"),
+      ]},
+      { ...DEFAULT_L0[4], status: "upcoming", rag: "green", startDate: "2026-04-06", endDate: "2026-06-06", notes: "", pathToGreen: "", children: [
+        mkL1("c2-11", "Pilot rollout (DevOps team)", "upcoming", "green", "2026-04-06", "2026-04-24"),
+        mkL1("c2-12", "Full engineering rollout", "upcoming", "green", "2026-04-21", "2026-05-16"),
+        mkL1("c2-13", "Training & documentation", "upcoming", "green", "2026-05-05", "2026-06-06"),
+      ]},
+      { ...DEFAULT_L0[5], status: "upcoming", rag: "green", startDate: "2026-05-25", endDate: "2026-06-30", notes: "", pathToGreen: "", children: [
+        mkL1("c2-14", "Legacy registry read-only", "upcoming", "green", "2026-05-25", "2026-06-13"),
+        mkL1("c2-15", "Legacy registry shutdown", "upcoming", "green", "2026-06-13", "2026-06-30"),
+      ]},
     ],
     transcripts: [
-      { id: "t4", date: "2026-01-17", title: "Kickoff", summary: "Lean team, want quick onboarding. Focused on npm and Docker registries.", text: "Full transcript..." },
+      { id: "t5", date: "2025-10-08", title: "Kickoff", summary: "Lean team of 15 engineers, want smooth 9-month onboarding. Focused on npm and Docker registries. No legacy complexity.", text: "Full transcript..." },
+      { id: "t6", date: "2026-02-12", title: "Migration Check-in", summary: "npm migration complete ahead of schedule. Docker migration started, straightforward so far. Discussed CI/CD pipeline update approach.", text: "Full transcript..." },
     ],
     weeklyUpdates: [],
+    rids: [
+      { id: "r2-1", type: "Dependency", title: "Docker registry DNS cutover requires ops window", severity: "Low", status: "Open", linkedMilestone: "c2-9", owner: "Sam Rivera", description: "DNS cutover from old registry to Cloudsmith requires a maintenance window agreed with ops.", mitigation: "Ops team aware. Targeting a weekend window in late March.", createdDate: "2026-02-15" },
+    ],
   },
   {
-    id: "c3", name: "FinanceFlow", logo: "FF", tier: "Enterprise",
-    startDate: "2025-11-01", targetDate: "2026-02-28",
-    baselineCompletion: "2026-02-28", forecastCompletion: "2026-03-14",
+    id: "c3", name: "FinanceFlow", logo: "FF", tier: "Strategic",
+    startDate: "2025-04-14", targetDate: "2026-04-14",
+    baselineCompletion: "2026-02-28", forecastCompletion: "2026-05-09",
     onboardingManager: "Sarah K",
     owner: "You",
     stakeholder: "Dr. Priya Patel (CTO)",
     milestones: [
-      { ...DEFAULT_L0[0], status: "complete", rag: "green", startDate: "2025-11-01", endDate: "2025-11-05", notes: "", pathToGreen: "", children: [] },
-      { ...DEFAULT_L0[1], status: "complete", rag: "green", startDate: "2025-11-06", endDate: "2025-11-20", notes: "", pathToGreen: "", children: [
-        mkL1("c3-1", "Security requirements deep-dive", "complete", "green", "2025-11-06", "2025-11-15", "SOC2 + HIPAA"),
+      { ...DEFAULT_L0[0], status: "complete", rag: "blue", startDate: "2025-04-14", endDate: "2025-05-02", notes: "Extensive compliance requirements identified early", pathToGreen: "", children: [
+        mkL1("c3-1", "Kickoff & exec alignment", "complete", "blue", "2025-04-14", "2025-04-18"),
+        mkL1("c3-2", "Compliance requirements scoping", "complete", "blue", "2025-04-18", "2025-05-02", "SOC2 + HIPAA + FCA regulatory"),
       ]},
-      { ...DEFAULT_L0[2], status: "complete", rag: "green", startDate: "2025-11-20", endDate: "2025-12-15", notes: "", pathToGreen: "", children: [] },
-      { ...DEFAULT_L0[3], status: "complete", rag: "green", startDate: "2025-12-10", endDate: "2026-01-10", notes: "", pathToGreen: "", children: [] },
-      // Rollout overlapping with late migration
-      { ...DEFAULT_L0[4], status: "in-progress", rag: "red", startDate: "2026-01-05", endDate: "2026-02-22", notes: "Compliance team training delayed", pathToGreen: "1) Reschedule compliance training for w/c Feb 17. 2) Run parallel UAT with pilot team. 3) Escalate to CTO if no response by Feb 14.", children: [
-        mkL1("c3-2", "Pilot team go-live", "complete", "green", "2026-01-05", "2026-02-01"),
-        mkL1("c3-3", "Compliance team training", "in-progress", "red", "2026-02-01", "2026-02-18", "Delayed \u2014 team availability", "Book dedicated 2hr slot with compliance lead, bypass calendar via CTO"),
-        mkL1("c3-4", "Full org rollout", "upcoming", "red", "2026-02-10", "2026-02-22", "Blocked by training", "Cannot start until training complete"),
+      { ...DEFAULT_L0[1], status: "complete", rag: "blue", startDate: "2025-05-05", endDate: "2025-07-25", notes: "Extended discovery due to regulatory requirements", pathToGreen: "", children: [
+        mkL1("c3-3", "Security requirements deep-dive", "complete", "blue", "2025-05-05", "2025-06-06", "SOC2 + HIPAA + data residency"),
+        mkL1("c3-4", "Current tooling & workflow audit", "complete", "blue", "2025-05-19", "2025-06-20"),
+        mkL1("c3-5", "Regulatory review & legal sign-off", "complete", "blue", "2025-06-16", "2025-07-25", "FCA data handling approval"),
       ]},
-      { ...DEFAULT_L0[5], status: "upcoming", rag: "amber", startDate: "2026-02-20", endDate: "2026-02-28", notes: "May miss Feb 28 target", pathToGreen: "Contingency: extend legacy access by 2 weeks while rollout completes", children: [] },
+      { ...DEFAULT_L0[2], status: "complete", rag: "green", startDate: "2025-07-28", endDate: "2025-10-31", notes: "Complex SSO with multi-factor", pathToGreen: "", children: [
+        mkL1("c3-6", "SSO / SAML with MFA", "complete", "green", "2025-07-28", "2025-08-29"),
+        mkL1("c3-7", "Repository & permissions structure", "complete", "green", "2025-08-18", "2025-09-19"),
+        mkL1("c3-8", "Data residency configuration", "complete", "green", "2025-09-15", "2025-10-10", "EU-only storage confirmed"),
+        mkL1("c3-9", "Audit logging & compliance hooks", "complete", "green", "2025-10-06", "2025-10-31"),
+      ]},
+      { ...DEFAULT_L0[3], status: "complete", rag: "green", startDate: "2025-10-20", endDate: "2026-01-24", notes: "Migration validated against compliance controls", pathToGreen: "", children: [
+        mkL1("c3-10", "Maven artifact migration", "complete", "green", "2025-10-20", "2025-11-28"),
+        mkL1("c3-11", "Docker image migration", "complete", "green", "2025-11-17", "2025-12-19"),
+        mkL1("c3-12", "Compliance validation of migrated artifacts", "complete", "green", "2026-01-06", "2026-01-24"),
+      ]},
+      // Rollout is where things went wrong
+      { ...DEFAULT_L0[4], status: "in-progress", rag: "red", startDate: "2026-01-12", endDate: "2026-04-25", notes: "Compliance team training repeatedly delayed", pathToGreen: "1) Reschedule compliance training for w/c Mar 17 — CTO to mandate attendance. 2) Run parallel UAT with pilot team. 3) Weekly exec check-in until resolved.", children: [
+        mkL1("c3-13", "Pilot team go-live", "complete", "green", "2026-01-12", "2026-02-14"),
+        mkL1("c3-14", "Compliance team training", "in-progress", "red", "2026-02-10", "2026-03-28", "Delayed 3 times — team availability", "CTO to mandate dedicated 2-day training block, no exceptions", ["c3-13"]),
+        mkL1("c3-15", "Trading systems team rollout", "upcoming", "amber", "2026-03-03", "2026-04-04", "Blocked by compliance training completion", "Can begin in parallel if compliance sign-off obtained on core controls", ["c3-14"]),
+        mkL1("c3-16", "Full org rollout", "upcoming", "red", "2026-03-24", "2026-04-25", "Blocked by upstream phases", "Cannot start until compliance and trading teams are live", ["c3-14", "c3-15"]),
+      ]},
+      { ...DEFAULT_L0[5], status: "upcoming", rag: "amber", startDate: "2026-04-14", endDate: "2026-05-09", notes: "Will miss original Feb 28 target — now targeting May", pathToGreen: "Contingency: extend legacy access by 6 weeks while rollout completes. Negotiate with Artifactory vendor for short-term extension.", children: [
+        mkL1("c3-17", "Legacy read-only period", "upcoming", "amber", "2026-04-14", "2026-04-28", "", "", ["c3-16"]),
+        mkL1("c3-18", "Legacy system shutdown", "upcoming", "amber", "2026-04-28", "2026-05-09", "", "", ["c3-17"]),
+      ]},
     ],
-    transcripts: [],
+    transcripts: [
+      { id: "t7", date: "2025-04-16", title: "Kickoff Call", summary: "Extensive compliance requirements — SOC2, HIPAA, FCA regulatory. Dr. Patel emphasised data residency as non-negotiable. Expect longer discovery phase.", text: "Full transcript..." },
+      { id: "t8", date: "2025-07-02", title: "Regulatory Review", summary: "FCA data handling approval obtained after 6-week review. Legal sign-off expected by end of July. Can proceed with configuration.", text: "Full transcript..." },
+      { id: "t9", date: "2025-12-04", title: "Migration Status", summary: "Maven and Docker migrations progressing well. Compliance validation to begin January. Discussed rollout sequencing — pilot team first, then compliance, then trading.", text: "Full transcript..." },
+      { id: "t10", date: "2026-02-19", title: "Rollout Blocker Review", summary: "Compliance team training cancelled for third time due to team availability. CTO agreed to mandate attendance. Revised timeline pushes go-live to late April.", text: "Full transcript..." },
+    ],
     weeklyUpdates: [],
+    rids: [
+      { id: "r3-1", type: "Issue", title: "Compliance team training cancelled 3 times", severity: "Critical", status: "Open", linkedMilestone: "c3-14", owner: "Dr. Priya Patel", description: "Compliance team training has been cancelled three times due to team availability. This is the primary blocker to full org rollout.", mitigation: "CTO to mandate a dedicated 2-day training block with no exceptions. Fallback: 1:1 training for compliance leads only.", createdDate: "2026-02-19" },
+      { id: "r3-2", type: "Risk", title: "Artifactory licence extension may be denied", severity: "High", status: "Open", linkedMilestone: "c3-17", owner: "Sarah K", description: "Current Artifactory licence expires end of April. If rollout slips further, we need a short-term extension which the vendor may not grant.", mitigation: "Pre-negotiate 6-week extension now. If denied, enforce hard cutover with read-only legacy access via backup.", createdDate: "2026-03-01" },
+      { id: "r3-3", type: "Dependency", title: "Trading systems team availability", severity: "High", status: "Open", linkedMilestone: "c3-15", owner: "Dr. Priya Patel", description: "Trading systems team rollout depends on compliance training completion. Team also has a regulatory reporting deadline in April.", mitigation: "Run trading team onboarding in parallel once core compliance controls are signed off, even if full training isn't complete.", createdDate: "2026-02-25" },
+      { id: "r3-4", type: "Risk", title: "FCA audit scheduled for May", severity: "Medium", status: "Open", linkedMilestone: null, owner: "Sarah K", description: "FCA regulatory audit is scheduled for May 2026. If migration is not fully complete and validated, it could create compliance exposure.", mitigation: "Prioritise compliance validation artifacts. Ensure audit trail is complete regardless of migration status.", createdDate: "2025-11-10" },
+      { id: "r3-5", type: "Issue", title: "Data residency documentation gap", severity: "Medium", status: "Closed", linkedMilestone: "c3-8", owner: "Sarah K", description: "Data residency configuration lacked documentation required for FCA audit trail.", mitigation: "Documentation completed and reviewed by legal team.", createdDate: "2025-09-20" },
+    ],
   },
 ];
 
@@ -149,6 +221,57 @@ function nextStatus(s) { return STATUS_CYCLE[(STATUS_CYCLE.indexOf(s)+1)%STATUS_
 const RAG_CYCLE=["green","amber","red","blue"];
 function nextRag(r) { return RAG_CYCLE[(RAG_CYCLE.indexOf(r)+1)%RAG_CYCLE.length]; }
 function StatusIcon({status}) { if(status==="complete") return "\u2713"; if(status==="in-progress") return "\u25C9"; return ""; }
+
+// Cascade dates: when a milestone's endDate changes, shift dependents' startDate (and endDate by same delta)
+function cascadeDependencies(milestones, changedId, oldEndDate, newEndDate) {
+  if (!oldEndDate || !newEndDate || oldEndDate === newEndDate) return milestones;
+  const delta = (new Date(newEndDate) - new Date(oldEndDate)) / (24*60*60*1000);
+  if (delta === 0) return milestones;
+  const shiftDate = (d, days) => { if (!d) return d; const dt = new Date(d); dt.setDate(dt.getDate() + days); return dt.toISOString().split("T")[0]; };
+
+  // Collect all L1s flat with references
+  const shifted = new Set();
+  const doShift = (ms, targetId, days) => {
+    return ms.map(l0 => ({...l0, children: l0.children.map(l1 => {
+      if ((l1.dependsOn||[]).includes(targetId) && !shifted.has(l1.id)) {
+        shifted.add(l1.id);
+        const newStart = shiftDate(l1.startDate, days);
+        const newEnd = shiftDate(l1.endDate, days);
+        return {...l1, startDate: newStart, endDate: newEnd};
+      }
+      return l1;
+    })}));
+  };
+
+  // Iteratively cascade (handles chains A→B→C)
+  let result = doShift(milestones, changedId, delta);
+  let prevSize = 0;
+  while (shifted.size > prevSize) {
+    prevSize = shifted.size;
+    for (const id of [...shifted]) {
+      result = doShift(result, id, delta);
+    }
+  }
+  return result;
+}
+
+// Build a flat lookup of all L1 milestones across all L0 phases
+function buildL1Lookup(milestones) {
+  const map = {};
+  milestones.forEach(l0 => l0.children.forEach(l1 => { map[l1.id] = l1.label; }));
+  return map;
+}
+
+// Get all L1 ids except the given one (for dependency picker)
+function getAllL1Options(milestones, excludeId) {
+  const opts = [];
+  milestones.forEach((l0, i) => {
+    l0.children.forEach(l1 => {
+      if (l1.id !== excludeId) opts.push({ id: l1.id, label: l1.label, phase: l0.label });
+    });
+  });
+  return opts;
+}
 
 // ─── Styles ───
 const styles = `
@@ -368,6 +491,17 @@ const styles = `
   .filter-chip-rag.active-blue { border-color:#3b82f6; background:rgba(59,130,246,0.1); color:#3b82f6; }
   .filter-sep { width:1px; height:20px; background:#1e2230; }
   .filter-label { font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:0.8px; color:#464b5e; }
+
+  /* ─── RID Table ─── */
+  .rid-type { font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:0.5px; padding:3px 7px; border-radius:4px; }
+  .rid-type-risk { background:rgba(245,158,11,0.1); color:#f59e0b; }
+  .rid-type-issue { background:rgba(239,68,68,0.1); color:#ef4444; }
+  .rid-type-dependency { background:rgba(99,102,241,0.1); color:#818cf8; }
+  .rid-sev { font-family:'JetBrains Mono',monospace; font-size:10px; font-weight:600; padding:2px 6px; border-radius:3px; }
+  .rid-status-open { background:rgba(239,68,68,0.08); color:#ef4444; }
+  .rid-status-mitigated { background:rgba(245,158,11,0.08); color:#f59e0b; }
+  .rid-status-closed { background:rgba(86,91,110,0.08); color:#565b6e; }
+  .rid-link { font-size:11px; color:#818cf8; cursor:help; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:150px; display:inline-block; }
 `;
 
 // ─── Shared Components ───
@@ -408,7 +542,7 @@ function AddCustomerModal({ onClose, onAdd, tmpl, tiers }) {
       </div>
       <div className="modal-actions">
         <button className="btn btn-ghost" onClick={onClose}>Cancel</button>
-        <button className="btn btn-primary" disabled={!name||!sd||!td} onClick={()=>onAdd({id:"c"+Date.now(),name,logo:name.split(" ").map(w=>w[0]).join("").slice(0,2).toUpperCase(),tier,startDate:sd,targetDate:td,baselineCompletion:td,forecastCompletion:td,onboardingManager:mgr,owner:mgr,stakeholder,milestones:mkCustomerMilestones(tmpl),transcripts:[],weeklyUpdates:[]})}>Add Customer</button>
+        <button className="btn btn-primary" disabled={!name||!sd||!td} onClick={()=>onAdd({id:"c"+Date.now(),name,logo:name.split(" ").map(w=>w[0]).join("").slice(0,2).toUpperCase(),tier,startDate:sd,targetDate:td,baselineCompletion:td,forecastCompletion:td,onboardingManager:mgr,owner:mgr,stakeholder,milestones:mkCustomerMilestones(tmpl),transcripts:[],weeklyUpdates:[],rids:[]})}>Add Customer</button>
       </div>
     </div></div>
   );
@@ -465,14 +599,18 @@ function EditCustomerModal({ customer, onClose, onSave, tiers }) {
   );
 }
 
-function EditMilestoneModal({ item, isL0, onClose, onSave }) {
+function EditMilestoneModal({ item, isL0, onClose, onSave, allMilestones }) {
   const [notes,setNotes]=useState(item.notes||"");
   const [status,setStatus]=useState(item.status);
   const [rag,setRag]=useState(item.rag||"green");
   const [sd,setSd]=useState(item.startDate||"");
   const [ed,setEd]=useState(item.endDate||"");
   const [ptg,setPtg]=useState(item.pathToGreen||"");
+  const [deps,setDeps]=useState(item.dependsOn||[]);
   const canEdit = !isL0 || !(item.children?.length > 0);
+  const depOptions = !isL0 && allMilestones ? getAllL1Options(allMilestones, item.id) : [];
+
+  const toggleDep = (id) => setDeps(prev => prev.includes(id) ? prev.filter(d=>d!==id) : [...prev, id]);
 
   return (
     <div className="modal-overlay" onClick={onClose}><div className="modal" onClick={e=>e.stopPropagation()}>
@@ -507,10 +645,85 @@ function EditMilestoneModal({ item, isL0, onClose, onSave }) {
         </div>
       )}
 
+      {!isL0 && depOptions.length > 0 && (
+        <div className="form-group">
+          <label className="form-label">Depends On (select predecessors)</label>
+          <div style={{maxHeight:"140px",overflowY:"auto",border:"1px solid #2e3348",borderRadius:"7px",background:"#181b26"}}>
+            {depOptions.map(opt=>{
+              const sel = deps.includes(opt.id);
+              return <div key={opt.id} onClick={()=>toggleDep(opt.id)} style={{display:"flex",alignItems:"center",gap:"8px",padding:"7px 12px",cursor:"pointer",background:sel?"rgba(99,102,241,0.08)":"transparent",transition:"background 0.12s",borderBottom:"1px solid #1a1d28"}}>
+                <span style={{width:"14px",height:"14px",borderRadius:"3px",border:sel?"2px solid #6366f1":"2px solid #2e3348",background:sel?"#6366f1":"none",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"9px",color:"white",flexShrink:0}}>{sel?"\u2713":""}</span>
+                <span style={{fontSize:"12px",color:sel?"#c5c8d6":"#8b8fa3"}}>{opt.label}</span>
+                <span style={{fontSize:"10px",color:"#464b5e",marginLeft:"auto"}}>{opt.phase}</span>
+              </div>;
+            })}
+          </div>
+          {deps.length>0&&<div style={{fontSize:"10px",color:"#565b6e",marginTop:"4px"}}>{deps.length} dependency{deps.length>1?"ies":""} selected — start date will shift if predecessor end dates change</div>}
+        </div>
+      )}
+
       <div className="form-group"><label className="form-label">Notes</label><textarea className="textarea" value={notes} onChange={e=>setNotes(e.target.value)} placeholder="General notes..." style={{minHeight:"80px"}} /></div>
 
       <div className="modal-actions"><button className="btn btn-ghost" onClick={onClose}>Cancel</button>
-        <button className="btn btn-primary" onClick={()=>onSave({...item, notes, status, rag, startDate:sd||null, endDate:ed||null, pathToGreen:(rag==="green"||rag==="blue")?"":ptg})}>Save</button>
+        <button className="btn btn-primary" onClick={()=>onSave({...item, notes, status, rag, startDate:sd||null, endDate:ed||null, pathToGreen:(rag==="green"||rag==="blue")?"":ptg, dependsOn:deps})}>Save</button>
+      </div>
+    </div></div>
+  );
+}
+
+function EditRidModal({ rid, milestones, onClose, onSave, onDelete }) {
+  const [type,setType]=useState(rid?.type||"Risk");
+  const [title,setTitle]=useState(rid?.title||"");
+  const [severity,setSeverity]=useState(rid?.severity||"Medium");
+  const [status,setStatus]=useState(rid?.status||"Open");
+  const [linked,setLinked]=useState(rid?.linkedMilestone||"");
+  const [owner,setOwner]=useState(rid?.owner||"");
+  const [desc,setDesc]=useState(rid?.description||"");
+  const [mit,setMit]=useState(rid?.mitigation||"");
+  const isNew = !rid?.id;
+
+  // Build flat list of all L0 + L1 milestones for linking
+  const msOptions = [];
+  milestones.forEach((l0, i) => {
+    msOptions.push({ id: l0.id, label: `L0: ${l0.label}` });
+    l0.children.forEach(l1 => msOptions.push({ id: l1.id, label: `  L1: ${l1.label}` }));
+  });
+
+  return (
+    <div className="modal-overlay" onClick={onClose}><div className="modal" onClick={e=>e.stopPropagation()}>
+      <div className="modal-title">{isNew ? "Add RID" : "Edit RID"}</div>
+      <div className="form-row">
+        <div className="form-group"><label className="form-label">Type *</label>
+          <select className="input select-input" value={type} onChange={e=>setType(e.target.value)}>{RID_TYPES.map(t=><option key={t}>{t}</option>)}</select>
+        </div>
+        <div className="form-group"><label className="form-label">Severity</label>
+          <select className="input select-input" value={severity} onChange={e=>setSeverity(e.target.value)}>{RID_SEVERITIES.map(s=><option key={s}>{s}</option>)}</select>
+        </div>
+      </div>
+      <div className="form-group"><label className="form-label">Title *</label><input className="input" value={title} onChange={e=>setTitle(e.target.value)} placeholder="Brief description of the risk, issue or dependency" /></div>
+      <div className="form-row">
+        <div className="form-group"><label className="form-label">Status</label>
+          <select className="input select-input" value={status} onChange={e=>setStatus(e.target.value)}>{RID_STATUSES.map(s=><option key={s}>{s}</option>)}</select>
+        </div>
+        <div className="form-group"><label className="form-label">Owner</label><input className="input" value={owner} onChange={e=>setOwner(e.target.value)} placeholder="e.g. Jamie Chen" /></div>
+      </div>
+      <div className="form-group"><label className="form-label">Linked Milestone</label>
+        <select className="input select-input" value={linked} onChange={e=>setLinked(e.target.value)}>
+          <option value="">None</option>
+          {msOptions.map(m=><option key={m.id} value={m.id}>{m.label}</option>)}
+        </select>
+      </div>
+      <div className="form-group"><label className="form-label">Description</label><textarea className="textarea" value={desc} onChange={e=>setDesc(e.target.value)} placeholder="Full description of the risk, issue or dependency..." style={{minHeight:"80px"}} /></div>
+      <div className="form-group"><label className="form-label">Mitigation / Resolution</label><textarea className="textarea" value={mit} onChange={e=>setMit(e.target.value)} placeholder="What actions are being taken or planned..." style={{minHeight:"80px"}} /></div>
+      <div className="modal-actions">
+        {!isNew && onDelete && <button className="btn btn-ghost" style={{color:"#ef4444",borderColor:"rgba(239,68,68,0.3)",marginRight:"auto"}} onClick={()=>onDelete(rid.id)}>Delete</button>}
+        <button className="btn btn-ghost" onClick={onClose}>Cancel</button>
+        <button className="btn btn-primary" disabled={!title.trim()} onClick={()=>onSave({
+          id: rid?.id || `rid-${Date.now()}`,
+          type, title: title.trim(), severity, status,
+          linkedMilestone: linked || null, owner, description: desc, mitigation: mit,
+          createdDate: rid?.createdDate || new Date().toISOString().split("T")[0],
+        })}>{isNew ? "Add" : "Save"}</button>
       </div>
     </div></div>
   );
@@ -794,17 +1007,41 @@ function exportGanttPNG(customer) {
 }
 
 // ─── Per-Customer Gantt ───
-function CustomerGantt({ customer }) {
+function CustomerGantt({ customer, showProgress = true }) {
   const tStart = new Date(customer.startDate); tStart.setDate(tStart.getDate()-7);
-  const tEnd = new Date(customer.targetDate); tEnd.setDate(tEnd.getDate()+14);
+  // Extend timeline to cover forecast if it exceeds target
+  let tEndDate = new Date(customer.targetDate);
+  if (customer.forecastCompletion && new Date(customer.forecastCompletion) > tEndDate) tEndDate = new Date(customer.forecastCompletion);
+  // Also check actual milestone end dates
+  customer.milestones.forEach(l0 => {
+    if (l0.endDate && new Date(l0.endDate) > tEndDate) tEndDate = new Date(l0.endDate);
+    l0.children.forEach(l1 => { if (l1.endDate && new Date(l1.endDate) > tEndDate) tEndDate = new Date(l1.endDate); });
+  });
+  const tEnd = new Date(tEndDate); tEnd.setDate(tEnd.getDate()+14);
   const span = tEnd - tStart;
   const totalWeeks = Math.max(1, Math.ceil(span / (7*24*60*60*1000)));
   const weeks = Array.from({length:totalWeeks},(_,i)=>i);
   const todayPct = Math.max(0,Math.min(100,((new Date()-tStart)/span)*100));
   const pct = d => { if(!d) return null; return Math.max(0,Math.min(100,((new Date(d)-tStart)/span)*100)); };
 
+  // Build a flat list of all visual rows with their Y offsets and L1 positions
+  const labelW = 210;
+  const l0RowH = 38, l1RowH = 30, headerH = 33;
+  const l1Positions = {}; // l1.id -> { y: center Y, startPct, endPct }
+  let yAccum = headerH;
+  customer.milestones.forEach(l0 => {
+    yAccum += l0RowH; // L0 row
+    l0.children.forEach(l1 => {
+      const s = pct(l1.startDate), e = pct(l1.endDate);
+      l1Positions[l1.id] = { y: yAccum + l1RowH / 2, startPct: s, endPct: e };
+      yAccum += l1RowH;
+    });
+    if (l0.children.length === 0) yAccum += 4; // spacer
+  });
+  const totalH = yAccum;
+
   return (
-    <div className="cgantt"><div className="cgantt-scroll"><div className="cgantt-inner">
+    <div className="cgantt" style={{position:"relative"}}><div className="cgantt-scroll"><div className="cgantt-inner" style={{position:"relative"}}>
       <div className="cgantt-timehead">
         <div className="cgantt-label-col">Milestone</div>
         <div className="cgantt-weeks">{weeks.map((w,i)=>{const d=new Date(tStart);d.setDate(d.getDate()+w*7);return <div key={w} className={`cgantt-wk ${i%2===0?"cgantt-wk-even":""}`}>{i%2===0?d.toLocaleDateString("en-GB",{day:"numeric",month:"short"}):""}</div>;})}</div>
@@ -829,8 +1066,12 @@ function CustomerGantt({ customer }) {
             </div>
             <div className="cgantt-l0-track">
               {weeks.map(w=><div key={w} className="cgantt-l0-track-cell" />)}
-              <div className="cgantt-l0-bar" style={{left:`${barLeft}%`,width:`${barW}%`,background:l0.color}} />
-              <div className="cgantt-l0-bar-fill" style={{left:`${barLeft}%`,width:`${fillW}%`,background:RAG_COLORS[l0.rag],opacity:0.55}} />
+              {showProgress ? <>
+                {fillW > 0 && <div className="cgantt-l0-bar-fill" style={{left:`${barLeft}%`,width:`${fillW}%`,background:RAG_COLORS[l0.rag],opacity:0.55,borderRadius: (barW - fillW) > 0.5 ? "4px 0 0 4px" : "4px"}} />}
+                {(barW - fillW) > 0.5 && <div className="cgantt-l0-bar" style={{left:`${barLeft + fillW}%`,width:`${barW - fillW}%`,background:"#1e2230",borderRadius: fillW > 0 ? "0 4px 4px 0" : "4px"}} />}
+              </> : <>
+                <div className="cgantt-l0-bar-fill" style={{left:`${barLeft}%`,width:`${barW}%`,background:RAG_COLORS[l0.rag],opacity:0.55,borderRadius:"4px"}} />
+              </>}
               {todayPct>0&&todayPct<100&&<div className="cgantt-today" style={{left:`${todayPct}%`}}>{l0i===0&&<span className="cgantt-today-label">Today</span>}</div>}
             </div>
           </div>
@@ -841,16 +1082,36 @@ function CustomerGantt({ customer }) {
             const hasL1Span = l1S !== null && l1E !== null;
             const l1Left = hasL1Span ? l1S : barLeft;
             const l1W = hasL1Span ? Math.max(1, l1E - l1S) : barW * 0.6;
-            const barColor = l1.status==="complete" ? "#565b6e" : RAG_COLORS[l1.rag];
-            const barOp = l1.status==="complete" ? 0.35 : l1.status==="upcoming" ? 0.2 : 0.7;
+            const barColor = showProgress ? (l1.status==="complete" ? "#565b6e" : RAG_COLORS[l1.rag]) : RAG_COLORS[l1.rag];
+            const barOp = showProgress ? (l1.status==="complete" ? 0.35 : l1.status==="upcoming" ? 0.2 : 0.7) : 0.5;
+            const dotColor = showProgress ? (l1.status==="complete" ? "#565b6e" : RAG_COLORS[l1.rag]) : RAG_COLORS[l1.rag];
+            const hasDeps = (l1.dependsOn||[]).length > 0;
+
+            // Compute dependency connector: draw a small triangle at the start of this bar pointing left
+            // and for each dependency, find its endPct and draw a dashed line from there to here
+            const depConnectors = [];
+            if (hasDeps) {
+              (l1.dependsOn||[]).forEach(depId => {
+                const depPos = l1Positions[depId];
+                if (depPos && depPos.endPct !== null && l1Left !== null) {
+                  depConnectors.push({ fromPct: depPos.endPct, toPct: l1Left });
+                }
+              });
+            }
 
             return <div key={l1.id} className="cgantt-l1-row">
               <div className="cgantt-l1-label">
-                <span className="cgantt-l1-dot" style={{background:l1.status==="complete"?"#565b6e":RAG_COLORS[l1.rag]}} />
-                <span className={`cgantt-l1-name ${l1.status==="complete"?"done":""}`}>{l1.label}</span>
+                <span className="cgantt-l1-dot" style={{background:dotColor}} />
+                <span className={`cgantt-l1-name ${showProgress && l1.status==="complete"?"done":""}`}>{l1.label}</span>
+                {hasDeps && <span style={{fontSize:"9px",color:"#6366f1",marginLeft:"4px"}} title={`Depends on ${(l1.dependsOn||[]).length} milestone(s)`}>{"\u21E0"}</span>}
               </div>
               <div className="cgantt-l1-track">
                 {weeks.map(w=><div key={w} className="cgantt-l1-track-cell" />)}
+                {/* Dependency connector lines */}
+                {depConnectors.map((dc,di)=><div key={di} style={{position:"absolute",top:"50%",left:`${dc.fromPct}%`,width:`${Math.max(0,dc.toPct-dc.fromPct)}%`,height:"0",borderTop:"1.5px dashed #6366f1",opacity:0.5,zIndex:3}} >
+                  {/* Arrow head at the end */}
+                  <div style={{position:"absolute",right:"-3px",top:"-4px",width:0,height:0,borderTop:"4px solid transparent",borderBottom:"4px solid transparent",borderLeft:"5px solid #6366f1",opacity:0.7}} />
+                </div>)}
                 <div className="cgantt-l1-bar" style={{left:`${l1Left}%`,width:`${l1W}%`,background:barColor,opacity:barOp}} />
                 {todayPct>0&&todayPct<100&&<div className="cgantt-today" style={{left:`${todayPct}%`}} />}
               </div>
@@ -1022,7 +1283,14 @@ function CustomerDetailView({ customer, onUpdate, tiers }) {
   const [addingL1,setAddingL1]=useState(null); const [newL1,setNewL1]=useState("");
   const [genUp,setGenUp]=useState(false); const [wkUp,setWkUp]=useState("");
   const [editCust,setEditCust]=useState(false);
+  const [editRid,setEditRid]=useState(null); // null = closed, {} = new, {id:...} = editing
+  const [ridSortKey,setRidSortKey]=useState("severity");
+  const [ridSortDir,setRidSortDir]=useState("desc");
+  const [ridFilterType,setRidFilterType]=useState(null);
+  const [ridFilterStatus,setRidFilterStatus]=useState(null);
+  const [showProgress,setShowProgress]=useState(true);
   const cRag=deriveCustomerRag(customer.milestones);
+  const l1Lookup = buildL1Lookup(customer.milestones);
 
   const save=ms=>onUpdate({...customer,milestones:ms});
 
@@ -1044,11 +1312,22 @@ function CustomerDetailView({ customer, onUpdate, tiers }) {
     if(editIsL0){
       ms=customer.milestones.map(m=>m.id===updated.id?{...m,notes:updated.notes,startDate:updated.startDate,endDate:updated.endDate,pathToGreen:updated.pathToGreen,...(m.children.length===0?{status:updated.status,rag:updated.rag}:{})}:m);
     } else {
+      // Find old endDate for cascading
+      let oldEndDate = null;
+      customer.milestones.forEach(l0=>l0.children.forEach(c=>{ if(c.id===updated.id) oldEndDate=c.endDate; }));
+
       ms=customer.milestones.map(l0=>{
         const nc=l0.children.map(c=>c.id===updated.id?updated:c);
         const ch=nc.some((c,i)=>c!==l0.children[i]);
         return ch?{...l0,children:nc,status:deriveL0Status(nc,l0.status),rag:deriveL0Rag(nc,l0.rag)}:l0;
       });
+
+      // Cascade date changes to dependents
+      if(oldEndDate !== updated.endDate) {
+        ms = cascadeDependencies(ms, updated.id, oldEndDate, updated.endDate);
+        // Re-derive L0 statuses after cascade
+        ms = ms.map(l0=>({...l0, status:deriveL0Status(l0.children,l0.status), rag:deriveL0Rag(l0.children,l0.rag)}));
+      }
     }
     save(ms); setEditItem(null);
   };
@@ -1110,15 +1389,18 @@ function CustomerDetailView({ customer, onUpdate, tiers }) {
       <button className={`tab ${tab==="transcripts"?"active":""}`} onClick={()=>setTab("transcripts")}>Transcripts ({customer.transcripts.length})</button>
       <button className={`tab ${tab==="weekly"?"active":""}`} onClick={()=>setTab("weekly")}>Weekly Update</button>
       <button className={`tab ${tab==="history"?"active":""}`} onClick={()=>setTab("history")}>History ({customer.weeklyUpdates.length})</button>
+      <button className={`tab ${tab==="rids"?"active":""}`} onClick={()=>setTab("rids")}>RIDs ({(customer.rids||[]).filter(r=>r.status!=="Closed").length})</button>
     </div>
 
     {/* ── PLAN ── */}
     {tab==="plan"&&<div>
-      <div style={{display:"flex",justifyContent:"flex-end",gap:"8px",marginBottom:"14px"}}>
+      <div style={{display:"flex",justifyContent:"flex-end",gap:"8px",marginBottom:"14px",alignItems:"center"}}>
+        <button className={`btn btn-sm ${showProgress?"btn-primary":"btn-ghost"}`} onClick={()=>setShowProgress(p=>!p)} style={{fontSize:"11px"}}>{showProgress?"Progress":"RAG Status"}</button>
+        <span style={{width:"1px",height:"18px",background:"#2e3348"}} />
         <button className="btn btn-ghost btn-sm" onClick={()=>exportGanttSVG(customer)}>{"\u2B07"} Export SVG</button>
         <button className="btn btn-ghost btn-sm" onClick={()=>exportGanttPNG(customer)}>{"\u2B07"} Export PNG</button>
       </div>
-      <CustomerGantt customer={customer} />
+      <CustomerGantt customer={customer} showProgress={showProgress} />
       <div style={{display:"flex",gap:"16px",marginTop:"14px",flexWrap:"wrap"}}>
         <div style={{display:"flex",alignItems:"center",gap:"6px",fontSize:"11px",color:"#6b7088"}}><span style={{width:"20px",height:"6px",borderRadius:"3px",background:RAG_COLORS.green,opacity:0.55}} /> Green</div>
         <div style={{display:"flex",alignItems:"center",gap:"6px",fontSize:"11px",color:"#6b7088"}}><span style={{width:"20px",height:"6px",borderRadius:"3px",background:RAG_COLORS.amber,opacity:0.55}} /> Amber</div>
@@ -1174,6 +1456,10 @@ function CustomerDetailView({ customer, onUpdate, tiers }) {
                 </div>
               </div>
               {(l1.rag==="amber"||l1.rag==="red")&&l1.pathToGreen&&<div className={`ptg-bar-l1 ptg-bar-${l1.rag}`}><span className="ptg-label" style={{fontSize:"9px"}}>P2G:</span><span className="ptg-text">{l1.pathToGreen}</span></div>}
+              {(l1.dependsOn||[]).length > 0 && <div style={{padding:"2px 10px 4px 54px",display:"flex",gap:"4px",alignItems:"center",flexWrap:"wrap"}}>
+                <span style={{fontSize:"9px",fontWeight:600,color:"#6366f1",textTransform:"uppercase",letterSpacing:"0.5px"}}>Depends on:</span>
+                {l1.dependsOn.map(depId=><span key={depId} style={{fontSize:"10.5px",color:"#818cf8",background:"rgba(99,102,241,0.08)",padding:"1px 6px",borderRadius:"3px"}}>{l1Lookup[depId]||depId}</span>)}
+              </div>}
             </div>)}
             {addingL1===l0i?<div className="inline-add">
               <input className="input" value={newL1} onChange={e=>setNewL1(e.target.value)} placeholder="Sub-milestone name..." autoFocus onKeyDown={e=>{if(e.key==="Enter")addL1Item(l0i);if(e.key==="Escape"){setAddingL1(null);setNewL1("");}}} style={{flex:1}} />
@@ -1208,7 +1494,109 @@ function CustomerDetailView({ customer, onUpdate, tiers }) {
       <div style={{display:"flex",flexDirection:"column",gap:"12px"}}>{[...customer.weeklyUpdates].reverse().map((u,i)=><div key={i} className="card"><div className="card-header"><span className="card-title">Update \u2014 {fmtDate(u.date)}</span></div><div className="update-output" style={{maxHeight:"200px"}}>{u.text}</div></div>)}</div>
     )}
 
-    {editItem&&<EditMilestoneModal item={editItem} isL0={editIsL0} onClose={()=>setEditItem(null)} onSave={handleEditSave} />}
+    {tab==="rids"&&(()=>{
+      const rids = customer.rids || [];
+      const toggle = (cur,v) => cur===v?null:v;
+
+      // Build milestone lookup
+      const msLookup = {};
+      customer.milestones.forEach(l0 => { msLookup[l0.id] = l0.label; l0.children.forEach(l1 => { msLookup[l1.id] = l1.label; }); });
+
+      // Filter
+      let filtered = rids;
+      if(ridFilterType) filtered = filtered.filter(r=>r.type===ridFilterType);
+      if(ridFilterStatus) filtered = filtered.filter(r=>r.status===ridFilterStatus);
+
+      // Sort
+      const sevOrder = { Critical:0, High:1, Medium:2, Low:3 };
+      const statOrder = { Open:0, Mitigated:1, Closed:2 };
+      const sorted = [...filtered].sort((a,b)=>{
+        let av,bv;
+        switch(ridSortKey){
+          case "type": av=a.type; bv=b.type; break;
+          case "title": av=a.title.toLowerCase(); bv=b.title.toLowerCase(); break;
+          case "severity": av=sevOrder[a.severity]; bv=sevOrder[b.severity]; break;
+          case "status": av=statOrder[a.status]; bv=statOrder[b.status]; break;
+          case "owner": av=(a.owner||"").toLowerCase(); bv=(b.owner||"").toLowerCase(); break;
+          case "milestone": av=(msLookup[a.linkedMilestone]||"").toLowerCase(); bv=(msLookup[b.linkedMilestone]||"").toLowerCase(); break;
+          case "date": av=a.createdDate||""; bv=b.createdDate||""; break;
+          default: av=a.title; bv=b.title;
+        }
+        if(av<bv) return ridSortDir==="asc"?-1:1;
+        if(av>bv) return ridSortDir==="asc"?1:-1;
+        return 0;
+      });
+
+      const handleRidSort = k => { if(ridSortKey===k) setRidSortDir(d=>d==="asc"?"desc":"asc"); else { setRidSortKey(k); setRidSortDir(k==="severity"?"desc":"asc"); } };
+      const SortTh = ({k,children}) => <th className={ridSortKey===k?"sorted":""} onClick={()=>handleRidSort(k)}>{children}<span className="sort-arrow">{ridSortKey===k?(ridSortDir==="asc"?"\u25B2":"\u25BC"):""}</span></th>;
+
+      const handleRidSave = (rid) => {
+        const existing = rids.find(r=>r.id===rid.id);
+        const newRids = existing ? rids.map(r=>r.id===rid.id?rid:r) : [...rids, rid];
+        onUpdate({...customer, rids: newRids});
+        setEditRid(null);
+      };
+      const handleRidDelete = (id) => {
+        onUpdate({...customer, rids: rids.filter(r=>r.id!==id)});
+        setEditRid(null);
+      };
+
+      const openCount = rids.filter(r=>r.status==="Open").length;
+      const critCount = rids.filter(r=>r.severity==="Critical"&&r.status!=="Closed").length;
+
+      return <div>
+        {/* Summary chips */}
+        <div style={{display:"flex",gap:"12px",marginBottom:"16px",alignItems:"center"}}>
+          <span style={{fontSize:"13px",color:"#c5c8d6"}}>{rids.length} total</span>
+          {openCount>0&&<span style={{fontSize:"12px",color:"#ef4444",background:"rgba(239,68,68,0.08)",padding:"3px 8px",borderRadius:"4px"}}>{openCount} open</span>}
+          {critCount>0&&<span style={{fontSize:"12px",color:"#dc2626",background:"rgba(220,38,38,0.08)",padding:"3px 8px",borderRadius:"4px"}}>{critCount} critical</span>}
+          <div style={{marginLeft:"auto"}}><button className="btn btn-primary btn-sm" onClick={()=>setEditRid({})}>+ Add RID</button></div>
+        </div>
+
+        {/* Filters */}
+        <div className="filter-bar">
+          <span className="filter-label">Type</span>
+          {RID_TYPES.map(t=><button key={t} className={`filter-chip ${ridFilterType===t?"active":""}`} onClick={()=>setRidFilterType(toggle(ridFilterType,t))}>{t}</button>)}
+          <div className="filter-sep" />
+          <span className="filter-label">Status</span>
+          {RID_STATUSES.map(s=><button key={s} className={`filter-chip ${ridFilterStatus===s?"active":""}`} onClick={()=>setRidFilterStatus(toggle(ridFilterStatus,s))}>{s}</button>)}
+          {(ridFilterType||ridFilterStatus)&&<button className="filter-chip" style={{color:"#818cf8",borderColor:"#6366f1"}} onClick={()=>{setRidFilterType(null);setRidFilterStatus(null);}}>Clear</button>}
+        </div>
+
+        {/* Table */}
+        <div style={{overflowX:"auto"}}>
+          <table className="ptable">
+            <thead><tr>
+              <SortTh k="type">Type</SortTh>
+              <SortTh k="severity">Severity</SortTh>
+              <SortTh k="title">Title</SortTh>
+              <SortTh k="status">Status</SortTh>
+              <SortTh k="milestone">Linked Milestone</SortTh>
+              <SortTh k="owner">Owner</SortTh>
+              <SortTh k="date">Created</SortTh>
+              <th style={{cursor:"default"}}></th>
+            </tr></thead>
+            <tbody>
+              {sorted.map(r=><tr key={r.id} className="clickable" onClick={()=>setEditRid(r)}>
+                <td><span className={`rid-type rid-type-${r.type.toLowerCase()}`}>{r.type}</span></td>
+                <td><span className="rid-sev" style={{background:`${RID_SEV_COLORS[r.severity]}15`,color:RID_SEV_COLORS[r.severity]}}>{r.severity}</span></td>
+                <td style={{whiteSpace:"normal",maxWidth:"280px",lineHeight:1.4}}>{r.title}</td>
+                <td><span className={`status-pill rid-status-${r.status.toLowerCase()}`}>{r.status}</span></td>
+                <td>{r.linkedMilestone?<span className="rid-link" title={msLookup[r.linkedMilestone]||r.linkedMilestone}>{msLookup[r.linkedMilestone]||"\u2014"}</span>:<span className="mono" style={{color:"#464b5e"}}>{"\u2014"}</span>}</td>
+                <td style={{color:"#8b8fa3"}}>{r.owner||"\u2014"}</td>
+                <td className="mono">{fmtDate(r.createdDate)}</td>
+                <td><button className="btn btn-ghost btn-sm" onClick={e=>{e.stopPropagation();setEditRid(r);}}>Edit</button></td>
+              </tr>)}
+              {sorted.length===0&&<tr><td colSpan={8} style={{textAlign:"center",padding:"32px",color:"#464b5e"}}>{rids.length===0?"No risks, issues or dependencies logged yet":"No RIDs match filters"}</td></tr>}
+            </tbody>
+          </table>
+        </div>
+        <div style={{fontSize:"11px",color:"#464b5e",marginTop:"10px"}}>{sorted.length} of {rids.length} RIDs shown</div>
+      </div>;
+    })()}
+
+    {editRid!==null&&<EditRidModal rid={editRid.id?editRid:null} milestones={customer.milestones} onClose={()=>setEditRid(null)} onSave={rid=>{const rids=customer.rids||[];const existing=rids.find(r=>r.id===rid.id);onUpdate({...customer,rids:existing?rids.map(r=>r.id===rid.id?rid:r):[...rids,rid]});setEditRid(null);}} onDelete={id=>{onUpdate({...customer,rids:(customer.rids||[]).filter(r=>r.id!==id)});setEditRid(null);}} />}
+    {editItem&&<EditMilestoneModal item={editItem} isL0={editIsL0} onClose={()=>setEditItem(null)} onSave={handleEditSave} allMilestones={customer.milestones} />}
     {showAddTr&&<AddTranscriptModal onClose={()=>setShowAddTr(false)} onAdd={t=>{onUpdate({...customer,transcripts:[...customer.transcripts,t]});setShowAddTr(false);}} />}
     {editCust&&<EditCustomerModal customer={customer} onClose={()=>setEditCust(false)} onSave={u=>{onUpdate(u);setEditCust(false);}} tiers={tiers} />}
   </div>;
