@@ -1340,7 +1340,7 @@ function CustomerDetailView({ customer, onUpdate, tiers }) {
       return syncL0({...l0, children: nc});
     }));
   };
-  
+
   const summarize=async tr=>{
     try{const r=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:1000,messages:[{role:"user",content:`Summarise this onboarding call transcript in 2-3 sentences, focusing on decisions, blockers, and next steps:\n\n${tr.text}`}]})});const d=await r.json();const s=d.content?.map(b=>b.text||"").join("")||"";onUpdate({...customer,transcripts:customer.transcripts.map(t=>t.id===tr.id?{...t,summary:s}:t)});}catch{}
   };
@@ -1628,8 +1628,7 @@ function App() {
       </div>
       <div className="sidebar-nav">
         <button className={`nav-item ${view==="dashboard"?"active":""}`} onClick={()=>{setView("dashboard");setSelId(null);}}><span className="nav-icon">{"\u25EB"}</span> Dashboard</button>
-        <button className={`nav-item ${view==="settings"?"active":""}`} onClick={()=>setView("settings")}><span className="nav-icon">{"\u2699"}</span> Phase Template</button>
-        <button className={`nav-item ${view==="tiers"?"active":""}`} onClick={()=>setView("tiers")}><span className="nav-icon">{"\u25CE"}</span> Tiers</button>
+        <button className={`nav-item ${view==="settings"?"active":""}`} onClick={()=>setView("settings")}><span className="nav-icon">{"\u2699"}</span> Settings</button>
       </div>
       <div className="sidebar-customers">
         <div className="sidebar-section-title">Customers</div>
@@ -1645,12 +1644,11 @@ function App() {
     <div className="main">
       <div className="main-header">
         <div>
-          <div className="main-title">{view==="customer"&&cur?cur.name:view==="settings"?"Phase Template":view==="tiers"?"Tiers":"Dashboard"}</div>
+          <div className="main-title">{view==="customer"&&cur?cur.name:view==="settings"?"Workspace Settings":"Dashboard"}</div>
           <div className="main-subtitle">
             {view==="dashboard"&&`${customers.length} active onboardings`}
             {view==="customer"&&cur&&`${cur.tier} \u00B7 ${cur.stakeholder}`}
-            {view==="settings"&&"Configure default L0 onboarding phases"}
-            {view==="tiers"&&"Manage customer tier categories"}
+            {view==="settings"&&"Manage default templates and categorization"}
           </div>
         </div>
         {view==="dashboard"&&<button className="btn btn-primary" onClick={()=>setShowAdd(true)}>+ New Customer</button>}
@@ -1658,8 +1656,14 @@ function App() {
       <div className="main-body">
         {view==="dashboard"&&<DashboardView customers={customers} onSelectCustomer={id=>{setSelId(id);setView("customer");}} onUpdateCustomer={u=>setCustomers(customers.map(c=>c.id===u.id?u:c))} tiers={tiers} />}
         {view==="customer"&&cur&&<CustomerDetailView customer={cur} onUpdate={u=>setCustomers(customers.map(c=>c.id===u.id?u:c))} tiers={tiers} />}
-        {view==="settings"&&<MilestoneSettings milestones={tmpl} onSave={i=>{setTmpl(i);setView("dashboard");}} onClose={()=>setView("dashboard")} />}
-        {view==="tiers"&&<TierSettings tiers={tiers} onSave={i=>{setTiers(i);setView("dashboard");}} onClose={()=>setView("dashboard")} />}
+        
+        {/* Settings View - Grouped Phase Template & Tiers */}
+        {view==="settings"&&(
+          <div style={{ display: "flex", flexDirection: "column", gap: "24px", alignItems: "flex-start" }}>
+            <MilestoneSettings milestones={tmpl} onSave={i=>{setTmpl(i);}} onClose={()=>setView("dashboard")} />
+            <TierSettings tiers={tiers} onSave={i=>{setTiers(i);}} onClose={()=>setView("dashboard")} />
+          </div>
+        )}
       </div>
     </div>
 
