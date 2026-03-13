@@ -1,4 +1,4 @@
-const { useState, useEffect } = React;
+import { useState, useEffect } from "react";
 
 const FONT_LINK = "https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=JetBrains+Mono:wght@400;500&display=swap";
 
@@ -480,7 +480,7 @@ function EditMilestoneModal({ item, isL0, onClose, onSave }) {
         {isL0 && <span style={{fontSize:"11px",color:"#565b6e",marginRight:"8px"}}>L0 PHASE</span>}
         {item.label}
       </div>
-      {isL0 && item.children?.length > 0 && <p style={{fontSize:"12px",color:"#6b7088",marginBottom:"14px"}}>Completion status and RAG are auto-derived from sub-milestones.</p>}
+      {isL0 && item.children?.length > 0 && <p style={{fontSize:"12px",color:"#6b7088",marginBottom:"14px"}}>Completion status and RAG are auto-derived from sub-milestones. You can still set dates, notes, and the Path to Green.</p>}
 
       {canEdit && (
         <div className="form-group"><label className="form-label">Completion Status</label>
@@ -499,6 +499,7 @@ function EditMilestoneModal({ item, isL0, onClose, onSave }) {
         <div className="form-group"><label className="form-label">RAG Status</label><RagSelector value={rag} onChange={setRag} /></div>
       )}
 
+      {/* Show PTG for amber/red — for L0 with children, show based on derived rag even though selector is hidden */}
       {(rag === "amber" || rag === "red") && (
         <div className="form-group">
           <label className="form-label" style={{color:RAG_COLORS[rag]}}>Path to Green {rag==="red"?"(Required)":"(Recommended)"}</label>
@@ -570,10 +571,12 @@ function GanttChart({ customers, onSelectCustomer }) {
   return (
     <div className="gantt-wrapper">
       <div className="gantt-header">{ws.map(w=><div key={w} className="gantt-week">{w%2===0?weekLabel(mn,w):""}</div>)}</div>
-      {customers.map(c=>{
+      {customers.map((c,ci)=>{
         const cRag=deriveCustomerRag(c.milestones);
         const s=weeksBetween(mn,new Date(c.startDate)),e=weeksBetween(mn,new Date(c.targetDate));
         const p=getTotalProgress(c.milestones),l=(s/tw)*100,wd=((e-s)/tw)*100;
+        const filledW = wd*(p/100);
+        const remainW = wd - filledW;
         return <div key={c.id} className="gantt-row">
           <div className="gantt-label" style={{cursor:"pointer"}} onClick={()=>onSelectCustomer&&onSelectCustomer(c.id)}>
             <span className="rag-dot" style={{background:RAG_COLORS[cRag],width:"8px",height:"8px"}} />
@@ -582,9 +585,12 @@ function GanttChart({ customers, onSelectCustomer }) {
           </div>
           <div className="gantt-cells" style={{position:"relative"}}>
             {ws.map(w=><div key={w} className="gantt-cell" />)}
-            <div className="gantt-bar-segment" style={{left:`${l}%`,width:`${wd}%`,background:"#1e2230"}} />
-            <div className="gantt-bar-segment" style={{left:`${l}%`,width:`${wd*p/100}%`,background:`linear-gradient(90deg,${RAG_COLORS[cRag]}88,${RAG_COLORS[cRag]}cc)`,zIndex:1}} />
-            {tp>0&&tp<100&&<div className="timeline-today" style={{left:`${tp}%`}} />}
+            {/* Filled progress bar */}
+            {filledW > 0 && <div className="gantt-bar-segment" style={{left:`${l}%`,width:`${filledW}%`,background:`linear-gradient(90deg,${RAG_COLORS[cRag]}88,${RAG_COLORS[cRag]}cc)`,zIndex:1,borderRadius: remainW > 0 ? "3px 0 0 3px" : "3px"}} />}
+            {/* Remaining track (greyed out) */}
+            {remainW > 0 && <div className="gantt-bar-segment" style={{left:`${l + filledW}%`,width:`${remainW}%`,background:"#1e2230",zIndex:1,borderRadius: filledW > 0 ? "0 3px 3px 0" : "3px"}} />}
+            {/* Today marker — text label only on first row */}
+            {tp>0&&tp<100&&<div style={{position:"absolute",top:"-4px",bottom:"-4px",left:`${tp}%`,width:"2px",background:"#ef4444",zIndex:2,opacity:0.7}}>{ci===0&&<span style={{position:"absolute",top:"-16px",left:"-14px",fontSize:"9px",color:"#ef4444",fontWeight:600,textTransform:"uppercase",whiteSpace:"nowrap"}}>Today</span>}</div>}
           </div>
         </div>;
       })}
@@ -1143,7 +1149,10 @@ function CustomerDetailView({ customer, onUpdate, tiers }) {
             <span className={`l0-chevron ${open?"open":""}`}>{"\u25B8"}</span>
           </button>
 
-          {(l0.rag==="amber"||l0.rag==="red")&&l0.pathToGreen&&<div className={`ptg-bar ptg-bar-${l0.rag}`}><span className="ptg-label">Path to Green:</span><span className="ptg-text">{l0.pathToGreen}</span></div>}
+          {(l0.rag==="amber"||l0.rag==="red")&&<div className={`ptg-bar ptg-bar-${l0.rag}`} style={{cursor:"pointer"}} onClick={()=>{setEditItem(l0);setEditIsL0(true);}} title="Click to edit Path to Green">
+            <span className="ptg-label">Path to Green:</span>
+            <span className="ptg-text">{l0.pathToGreen||<span style={{fontStyle:"italic",opacity:0.6}}>Click to set path to green...</span>}</span>
+          </div>}
 
           {open&&<div className="l1-container">
             {l0.notes&&<div style={{padding:"6px 10px 10px 32px",fontSize:"12px",color:"#6b7088",fontStyle:"italic"}}>{l0.notes}</div>}
@@ -1206,7 +1215,7 @@ function CustomerDetailView({ customer, onUpdate, tiers }) {
 }
 
 // ─── App ───
-function App() {
+export default function App() {
   const [customers,setCustomers]=useState(SAMPLES);
   const [view,setView]=useState("dashboard");
   const [selId,setSelId]=useState(null);
@@ -1268,6 +1277,7 @@ function App() {
     {showAdd&&<AddCustomerModal onClose={()=>setShowAdd(false)} onAdd={nc=>{setCustomers([...customers,nc]);setShowAdd(false);setSelId(nc.id);setView("customer");}} tmpl={tmpl} tiers={tiers} />}
   </div>;
 }
+
 
 // Tell React to render the app inside the <div id="root"> from our index.html
 const root = ReactDOM.createRoot(document.getElementById('root'));
