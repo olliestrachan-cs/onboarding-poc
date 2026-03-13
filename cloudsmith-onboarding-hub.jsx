@@ -207,6 +207,23 @@ function deriveL0Rag(ch, fb) { if(!ch.length) return fb; if(ch.some(c=>c.rag==="
 function deriveL0Status(ch, fb) { if(!ch.length) return fb; if(ch.every(c=>c.status==="complete")) return "complete"; if(ch.some(c=>c.status==="in-progress"||c.status==="complete")) return "in-progress"; return "upcoming"; }
 function deriveCustomerRag(ms) { if(ms.some(m=>m.rag==="red"||m.children.some(c=>c.rag==="red"))) return "red"; if(ms.some(m=>m.rag==="amber"||m.children.some(c=>c.rag==="amber"))) return "amber"; if(ms.some(m=>m.rag==="green"||m.children.some(c=>c.rag==="green"))) return "green"; return "blue"; }
 
+// ADD THIS NEW FUNCTION:
+function syncL0(l0) {
+  if (!l0.children || !l0.children.length) return l0;
+  let minStart = null, maxEnd = null;
+  l0.children.forEach(c => {
+    if (c.startDate && (!minStart || new Date(c.startDate) < new Date(minStart))) minStart = c.startDate;
+    if (c.endDate && (!maxEnd || new Date(c.endDate) > new Date(maxEnd))) maxEnd = c.endDate;
+  });
+  return {
+    ...l0,
+    status: deriveL0Status(l0.children, l0.status),
+    rag: deriveL0Rag(l0.children, l0.rag),
+    startDate: minStart || l0.startDate,
+    endDate: maxEnd || l0.endDate
+  };
+}
+
 function getL0Progress(l0) { if(!l0.children.length) return l0.status==="complete"?100:l0.status==="in-progress"?50:0; return Math.round((l0.children.filter(c=>c.status==="complete").length/l0.children.length)*100); }
 function getTotalProgress(ms) { const a=ms.flatMap(l=>l.children.length?l.children:[l]); const d=a.filter(i=>i.status==="complete").length; return a.length?Math.round((d/a.length)*100):0; }
 
@@ -1276,7 +1293,7 @@ function CustomerDetailView({ customer, onUpdate, tiers }) {
     save(customer.milestones.map((l0,i)=>{
       if(i!==l0i) return l0;
       const nc=l0.children.map(c=>c.id===l1Id?{...c,status:nextStatus(c.status),endDate:nextStatus(c.status)==="complete"&&!c.endDate?today():c.endDate,startDate:!c.startDate&&nextStatus(c.status)==="in-progress"?today():c.startDate}:c);
-      return {...l0,children:nc,status:deriveL0Status(nc,l0.status),rag:deriveL0Rag(nc,l0.rag)};
+      return syncL0({...l0, children: nc});
     }));
   };
 
@@ -1297,14 +1314,14 @@ function CustomerDetailView({ customer, onUpdate, tiers }) {
       ms=customer.milestones.map(l0=>{
         const nc=l0.children.map(c=>c.id===updated.id?updated:c);
         const ch=nc.some((c,i)=>c!==l0.children[i]);
-        return ch?{...l0,children:nc,status:deriveL0Status(nc,l0.status),rag:deriveL0Rag(nc,l0.rag)}:l0;
+        return ch ? syncL0({...l0, children: nc}) : l0;
       });
 
       // Cascade date changes to dependents
       if(oldEndDate !== updated.endDate) {
         ms = cascadeDependencies(ms, updated.id, oldEndDate, updated.endDate);
-        // Re-derive L0 statuses after cascade
-        ms = ms.map(l0=>({...l0, status:deriveL0Status(l0.children,l0.status), rag:deriveL0Rag(l0.children,l0.rag)}));
+        // Re-derive L0 statuses and dates after cascade
+        ms = ms.map(l0 => syncL0(l0));
       }
     }
     save(ms); setEditItem(null);
@@ -1312,7 +1329,7 @@ function CustomerDetailView({ customer, onUpdate, tiers }) {
 
   const addL1Item=(l0i)=>{
     if(!newL1.trim()) return;
-    save(customer.milestones.map((l0,i)=>i!==l0i?l0:{...l0,children:[...l0.children,mkL1(`l1-${Date.now()}`,newL1.trim())]}));
+    save(customer.milestones.map((l0,i)=>i!==l0i?l0:syncL0({...l0,children:[...l0.children,mkL1(`l1-${Date.now()}`,newL1.trim())]})));
     setNewL1(""); setAddingL1(null);
   };
 
@@ -1320,10 +1337,10 @@ function CustomerDetailView({ customer, onUpdate, tiers }) {
     save(customer.milestones.map((l0,i)=>{
       if(i!==l0i) return l0;
       const nc=l0.children.filter(c=>c.id!==l1Id);
-      return {...l0,children:nc,status:deriveL0Status(nc,l0.status),rag:deriveL0Rag(nc,l0.rag)};
+      return syncL0({...l0, children: nc});
     }));
   };
-
+  
   const summarize=async tr=>{
     try{const r=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:1000,messages:[{role:"user",content:`Summarise this onboarding call transcript in 2-3 sentences, focusing on decisions, blockers, and next steps:\n\n${tr.text}`}]})});const d=await r.json();const s=d.content?.map(b=>b.text||"").join("")||"";onUpdate({...customer,transcripts:customer.transcripts.map(t=>t.id===tr.id?{...t,summary:s}:t)});}catch{}
   };
