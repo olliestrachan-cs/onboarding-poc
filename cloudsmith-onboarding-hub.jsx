@@ -1027,13 +1027,10 @@ function CustomerGantt({ customer, showProgress = true }) {
   // Build a flat list of all visual rows with their Y offsets and L1 positions
   const labelW = 210;
   const l0RowH = 38, l1RowH = 30, headerH = 33;
-  const l1Positions = {}; // l1.id -> { y: center Y, startPct, endPct }
   let yAccum = headerH;
   customer.milestones.forEach(l0 => {
     yAccum += l0RowH; // L0 row
     l0.children.forEach(l1 => {
-      const s = pct(l1.startDate), e = pct(l1.endDate);
-      l1Positions[l1.id] = { y: yAccum + l1RowH / 2, startPct: s, endPct: e };
       yAccum += l1RowH;
     });
     if (l0.children.length === 0) yAccum += 4; // spacer
@@ -1085,33 +1082,14 @@ function CustomerGantt({ customer, showProgress = true }) {
             const barColor = showProgress ? (l1.status==="complete" ? "#565b6e" : RAG_COLORS[l1.rag]) : RAG_COLORS[l1.rag];
             const barOp = showProgress ? (l1.status==="complete" ? 0.35 : l1.status==="upcoming" ? 0.2 : 0.7) : 0.5;
             const dotColor = showProgress ? (l1.status==="complete" ? "#565b6e" : RAG_COLORS[l1.rag]) : RAG_COLORS[l1.rag];
-            const hasDeps = (l1.dependsOn||[]).length > 0;
-
-            // Compute dependency connector: draw a small triangle at the start of this bar pointing left
-            // and for each dependency, find its endPct and draw a dashed line from there to here
-            const depConnectors = [];
-            if (hasDeps) {
-              (l1.dependsOn||[]).forEach(depId => {
-                const depPos = l1Positions[depId];
-                if (depPos && depPos.endPct !== null && l1Left !== null) {
-                  depConnectors.push({ fromPct: depPos.endPct, toPct: l1Left });
-                }
-              });
-            }
 
             return <div key={l1.id} className="cgantt-l1-row">
               <div className="cgantt-l1-label">
                 <span className="cgantt-l1-dot" style={{background:dotColor}} />
                 <span className={`cgantt-l1-name ${showProgress && l1.status==="complete"?"done":""}`}>{l1.label}</span>
-                {hasDeps && <span style={{fontSize:"9px",color:"#6366f1",marginLeft:"4px"}} title={`Depends on ${(l1.dependsOn||[]).length} milestone(s)`}>{"\u21E0"}</span>}
               </div>
               <div className="cgantt-l1-track">
                 {weeks.map(w=><div key={w} className="cgantt-l1-track-cell" />)}
-                {/* Dependency connector lines */}
-                {depConnectors.map((dc,di)=><div key={di} style={{position:"absolute",top:"50%",left:`${dc.fromPct}%`,width:`${Math.max(0,dc.toPct-dc.fromPct)}%`,height:"0",borderTop:"1.5px dashed #6366f1",opacity:0.5,zIndex:3}} >
-                  {/* Arrow head at the end */}
-                  <div style={{position:"absolute",right:"-3px",top:"-4px",width:0,height:0,borderTop:"4px solid transparent",borderBottom:"4px solid transparent",borderLeft:"5px solid #6366f1",opacity:0.7}} />
-                </div>)}
                 <div className="cgantt-l1-bar" style={{left:`${l1Left}%`,width:`${l1W}%`,background:barColor,opacity:barOp}} />
                 {todayPct>0&&todayPct<100&&<div className="cgantt-today" style={{left:`${todayPct}%`}} />}
               </div>
