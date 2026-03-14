@@ -552,7 +552,7 @@ function TierBadge({ tier, tiers }) {
 
 // ─── Modals ───
 function AddCustomerModal({ onClose, onAdd, tmpl, tiers }) {
-  const [name,setName]=useState(""); const [tier,setTier]=useState(tiers[0]?.label||""); const [stakeholder,setStakeholder]=useState(""); const [sd,setSd]=useState(""); const [td,setTd]=useState(""); const [mgr,setMgr]=useState("You");
+  const [name,setName]=useState(""); const [tier,setTier]=useState(tiers[0]?.label||""); const [stakeholder,setStakeholder]=useState(""); const [sd,setSd]=useState(""); const [mgr,setMgr]=useState("You");
   return (
     <div className="modal-overlay" onClick={onClose}><div className="modal" onClick={e=>e.stopPropagation()}>
       <div className="modal-title">Add New Customer</div>
@@ -566,11 +566,10 @@ function AddCustomerModal({ onClose, onAdd, tmpl, tiers }) {
       </div>
       <div className="form-row">
         <div className="form-group"><label className="form-label">Start Date *</label><input className="input" type="date" value={sd} onChange={e=>setSd(e.target.value)} /></div>
-        <div className="form-group"><label className="form-label">Target Go-Live *</label><input className="input" type="date" value={td} onChange={e=>setTd(e.target.value)} /></div>
       </div>
       <div className="modal-actions">
         <button className="btn btn-ghost" onClick={onClose}>Cancel</button>
-        <button className="btn btn-primary" disabled={!name||!sd||!td} onClick={()=>onAdd({id:"c"+Date.now(),name,logo:name.split(" ").map(w=>w[0]).join("").slice(0,2).toUpperCase(),tier,startDate:sd,targetDate:td,baselineCompletion:td,forecastCompletion:td,onboardingManager:mgr,owner:mgr,stakeholder,milestones:mkCustomerMilestones(tmpl),transcripts:[],weeklyUpdates:[],rids:[]})}>Add Customer</button>
+        <button className="btn btn-primary" disabled={!name||!sd} onClick={()=>onAdd({id:"c"+Date.now(),name,logo:name.split(" ").map(w=>w[0]).join("").slice(0,2).toUpperCase(),tier,startDate:sd,targetDate:null,baselineCompletion:null,forecastCompletion:null,onboardingManager:mgr,owner:mgr,stakeholder,milestones:mkCustomerMilestones(tmpl),transcripts:[],weeklyUpdates:[],rids:[]})}>Add Customer</button>
       </div>
     </div></div>
   );
@@ -598,7 +597,6 @@ function EditCustomerModal({ customer, onClose, onSave, tiers }) {
   const [stakeholder,setStakeholder]=useState(customer.stakeholder);
   const [mgr,setMgr]=useState(customer.onboardingManager||"");
   const [sd,setSd]=useState(customer.startDate||"");
-  const [td,setTd]=useState(customer.targetDate||"");
   const [bc,setBc]=useState(customer.baselineCompletion||"");
   const [fc,setFc]=useState(customer.forecastCompletion||"");
   return (
@@ -614,14 +612,13 @@ function EditCustomerModal({ customer, onClose, onSave, tiers }) {
       </div>
       <div className="form-row">
         <div className="form-group"><label className="form-label">Start Date</label><input className="input" type="date" value={sd} onChange={e=>setSd(e.target.value)} /></div>
-        <div className="form-group"><label className="form-label">Target Go-Live</label><input className="input" type="date" value={td} onChange={e=>setTd(e.target.value)} /></div>
       </div>
       <div className="form-row">
         <div className="form-group"><label className="form-label">Baseline Completion</label><input className="input" type="date" value={bc} onChange={e=>setBc(e.target.value)} /><div style={{fontSize:"10px",color:"#464b5e",marginTop:"4px"}}>Original target date (set once at kickoff)</div></div>
         <div className="form-group"><label className="form-label">Forecast Completion</label><input className="input" type="date" value={fc} onChange={e=>setFc(e.target.value)} /><div style={{fontSize:"10px",color:"#464b5e",marginTop:"4px"}}>Current best estimate</div></div>
       </div>
       <div className="modal-actions"><button className="btn btn-ghost" onClick={onClose}>Cancel</button>
-        <button className="btn btn-primary" onClick={()=>onSave({...customer,name,tier,stakeholder,onboardingManager:mgr,startDate:sd||null,targetDate:td||null,baselineCompletion:bc||null,forecastCompletion:fc||null,logo:name.split(" ").map(w=>w[0]).join("").slice(0,2).toUpperCase()})}>Save</button>
+        <button className="btn btn-primary" onClick={()=>onSave({...customer,name,tier,stakeholder,onboardingManager:mgr,startDate:sd||null,baselineCompletion:bc||null,forecastCompletion:fc||null,logo:name.split(" ").map(w=>w[0]).join("").slice(0,2).toUpperCase()})}>Save</button>
       </div>
     </div></div>
   );
@@ -817,7 +814,7 @@ function TierSettings({ tiers, onSave, onClose }) {
 }
 
 // ─── Dashboard Gantt ───
-function GanttChart({ customers, onSelectCustomer }) {
+function GanttChart({ customers, onSelectCustomer, showProgress = true }) {
   if(!customers.length) return <div className="empty-state"><div className="empty-state-text">No customers yet</div></div>;
   const allD=customers.flatMap(c=>[new Date(c.startDate),new Date(c.targetDate)]);
   const mn=new Date(Math.min(...allD)); mn.setDate(mn.getDate()-7);
@@ -841,11 +838,14 @@ function GanttChart({ customers, onSelectCustomer }) {
           </div>
           <div className="gantt-cells" style={{position:"relative"}}>
             {ws.map(w=><div key={w} className="gantt-cell" />)}
-            {/* Filled progress bar */}
-            {filledW > 0 && <div className="gantt-bar-segment" style={{left:`${l}%`,width:`${filledW}%`,background:`linear-gradient(90deg,${RAG_COLORS[cRag]}88,${RAG_COLORS[cRag]}cc)`,zIndex:1,borderRadius: remainW > 0 ? "3px 0 0 3px" : "3px"}} />}
-            {/* Remaining track (greyed out) */}
-            {remainW > 0 && <div className="gantt-bar-segment" style={{left:`${l + filledW}%`,width:`${remainW}%`,background:"#1e2230",zIndex:1,borderRadius: filledW > 0 ? "0 3px 3px 0" : "3px"}} />}
-            {/* Today marker — text label only on first row */}
+            {showProgress ? <>
+              {/* Progress mode: filled + remaining */}
+              {filledW > 0 && <div className="gantt-bar-segment" style={{left:`${l}%`,width:`${filledW}%`,background:`linear-gradient(90deg,${RAG_COLORS[cRag]}88,${RAG_COLORS[cRag]}cc)`,zIndex:1,borderRadius: remainW > 0 ? "3px 0 0 3px" : "3px"}} />}
+              {remainW > 0 && <div className="gantt-bar-segment" style={{left:`${l + filledW}%`,width:`${remainW}%`,background:"#1e2230",zIndex:1,borderRadius: filledW > 0 ? "0 3px 3px 0" : "3px"}} />}
+            </> : <>
+              {/* RAG status mode: solid bar */}
+              <div className="gantt-bar-segment" style={{left:`${l}%`,width:`${wd}%`,background:`linear-gradient(90deg,${RAG_COLORS[cRag]}88,${RAG_COLORS[cRag]}cc)`,zIndex:1,borderRadius:"3px"}} />
+            </>}
             {tp>0&&tp<100&&<div style={{position:"absolute",top:"-4px",bottom:"-4px",left:`${tp}%`,width:"2px",background:"#ef4444",zIndex:2,opacity:0.7}}>{ci===0&&<span style={{position:"absolute",top:"-16px",left:"-14px",fontSize:"9px",color:"#ef4444",fontWeight:600,textTransform:"uppercase",whiteSpace:"nowrap"}}>Today</span>}</div>}
           </div>
         </div>;
@@ -1047,6 +1047,19 @@ function exportGanttPNG(customer) {
     exportGanttSVG(customer);
   };
   img.src = `data:image/svg+xml;base64,${encoded}`;
+}
+
+function copyStatusUpdate(customer) {
+  const EMOJI = { blue:"🔵", green:"🟢", amber:"🟠", red:"🔴" };
+  const fmtSlash = d => { if(!d) return "TBD"; const dt=new Date(d); return `${String(dt.getDate()).padStart(2,"0")}/${String(dt.getMonth()+1).padStart(2,"0")}/${dt.getFullYear()}`; };
+  const statusLabel = s => s==="complete"?"Complete":s==="in-progress"?"In Progress":"Not Started";
+  const lines = customer.milestones
+    .filter(l0=>!l0.isNA)
+    .map(l0=>{
+      const emoji = l0.status==="upcoming" ? "⚪" : (EMOJI[l0.rag]||"⚪");
+      return `${emoji} ${l0.label} | ${statusLabel(l0.status)} | ${fmtSlash(l0.endDate)}`;
+    });
+  return navigator.clipboard.writeText(lines.join("\n")).catch(()=>{});
 }
 
 // ─── Per-Customer Gantt ───
@@ -1288,6 +1301,7 @@ function DashboardView({ customers, onSelectCustomer, onUpdateCustomer, tiers })
   const greens=customers.filter(c=>deriveCustomerRag(c.milestones)==="green").length;
   const ambers=customers.filter(c=>deriveCustomerRag(c.milestones)==="amber").length;
   const reds=customers.filter(c=>deriveCustomerRag(c.milestones)==="red").length;
+  const [dashShowProgress,setDashShowProgress]=useState(true);
 
   return <div>
     <div className="stats-grid">
@@ -1296,7 +1310,13 @@ function DashboardView({ customers, onSelectCustomer, onUpdateCustomer, tiers })
       <div className="stat-card"><div className="stat-label" style={{color:"#f59e0b"}}>Amber</div><div className="stat-value" style={{color:"#f59e0b"}}>{ambers}</div></div>
       <div className="stat-card"><div className="stat-label" style={{color:"#ef4444"}}>Red</div><div className="stat-value" style={{color:reds>0?"#ef4444":"#565b6e"}}>{reds}</div></div>
     </div>
-    <div className="card"><div className="card-header"><span className="card-title">Onboarding Timeline</span></div><GanttChart customers={customers} onSelectCustomer={onSelectCustomer} /></div>
+    <div className="card">
+      <div className="card-header">
+        <span className="card-title">Onboarding Timeline</span>
+        <button className={`btn btn-sm ${dashShowProgress?"btn-primary":"btn-ghost"}`} onClick={()=>setDashShowProgress(p=>!p)} style={{fontSize:"11px"}}>{dashShowProgress?"Progress":"RAG Status"}</button>
+      </div>
+      <GanttChart customers={customers} onSelectCustomer={onSelectCustomer} showProgress={dashShowProgress} />
+    </div>
     <div className="card">
       <div className="card-header"><span className="card-title">Portfolio</span></div>
       <PortfolioTable customers={customers} onSelectCustomer={onSelectCustomer} onUpdateCustomer={onUpdateCustomer} tiers={tiers} />
@@ -1311,9 +1331,16 @@ function CustomerDetailView({ customer, onUpdate, tiers }) {
   const [editItem,setEditItem]=useState(null); const [editIsL0,setEditIsL0]=useState(false);
   const [showAddTr,setShowAddTr]=useState(false);
   const [addingL1,setAddingL1]=useState(null); const [newL1,setNewL1]=useState("");
-  const [genUp,setGenUp]=useState(false); const [wkUp,setWkUp]=useState("");
+  const [genUp,setGenUp]=useState(false);
+  const [showAddUpdate,setShowAddUpdate]=useState(false);
+  const [manualDate,setManualDate]=useState(today());
+  const [manualCtx,setManualCtx]=useState("");
   const [editCust,setEditCust]=useState(false);
   const [editRid,setEditRid]=useState(null); // null = closed, {} = new, {id:...} = editing
+  const [copied,setCopied]=useState(false);
+  const [updatesAsc,setUpdatesAsc]=useState(false);
+  const [manualSnapshot,setManualSnapshot]=useState([]);
+  const [copiedUpdateId,setCopiedUpdateId]=useState(null);
   const [ridSortKey,setRidSortKey]=useState("severity");
   const [ridSortDir,setRidSortDir]=useState("desc");
   const [ridFilterType,setRidFilterType]=useState(null);
@@ -1405,16 +1432,24 @@ function CustomerDetailView({ customer, onUpdate, tiers }) {
   };
 
   const genWeekly=async()=>{
-    setGenUp(true);setWkUp("");
+    setGenUp(true); setShowAddUpdate(true); setManualCtx(""); setManualSnapshot(buildSnapshot());
     const mCtx=customer.milestones.map(l0=>{
       const l1s=l0.children.map(c=>`    [L1] ${c.label}: ${c.status} | RAG: ${c.rag} | ${fmtRange(c.startDate,c.endDate)}${c.pathToGreen?` | P2G: ${c.pathToGreen}`:""}${c.notes?` | ${c.notes}`:""}`).join("\n");
       return `[L0] ${l0.label}: ${l0.status} | RAG: ${l0.rag.toUpperCase()} | ${fmtRange(l0.startDate,l0.endDate)} (${getL0Progress(l0)}%)${l0.pathToGreen?`\n    Path to Green: ${l0.pathToGreen}`:""}${l0.notes?` | ${l0.notes}`:""}\n${l1s}`;
     }).join("\n");
     const tCtx=customer.transcripts.slice(-5).map(t=>`Call: ${t.title} (${t.date})\n${t.summary||t.text.slice(0,500)}`).join("\n\n");
-    const prev=customer.weeklyUpdates.slice(-3).map(u=>`[${u.date}]\n${u.text}`).join("\n\n");
-    const prompt=`You are a senior onboarding manager at Cloudsmith. Generate a weekly status update for ${customer.name}.\n\nCustomer: ${customer.name} (${customer.tier}) | Stakeholder: ${customer.stakeholder}\nTimeline: ${customer.startDate} \u2192 ${customer.targetDate} | Overall RAG: ${cRag.toUpperCase()}\nProgress: ${getTotalProgress(customer.milestones)}%\n\nMilestones with date ranges (phases may overlap):\n${mCtx}\n\nRecent Calls:\n${tCtx||"None."}\n${prev?`\nPrevious Updates:\n${prev}`:""}\n\nWrite a professional 150-250 word weekly update:\n1. State overall RAG and current phase(s) — note any running in parallel\n2. Highlight accomplishments (reference specific L1s)\n3. For Amber/Red items: state the issue AND Path to Green actions\n4. Next steps for the coming week\n5. Escalation items if any Red milestones exist\n\nDirect, clear tone for leadership. Use GREEN/AMBER/RED labels. Short paragraphs, no bullets.`;
-    try{const r=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:1000,messages:[{role:"user",content:prompt}]})});const d=await r.json();const txt=d.content?.map(b=>b.text||"").join("")||"Failed.";setWkUp(txt);onUpdate({...customer,weeklyUpdates:[...customer.weeklyUpdates,{date:today(),text:txt}]});}catch{setWkUp("Error generating update.");}
+    const prev=customer.weeklyUpdates.slice(-3).map(u=>`[${u.date}]\n${u.context||u.text||""}`).join("\n\n");
+    const prompt=`You are a senior onboarding manager at Cloudsmith. Generate a weekly status update for ${customer.name}.\n\nCustomer: ${customer.name} (${customer.tier}) | Stakeholder: ${customer.stakeholder}\nTimeline: ${customer.startDate} | Overall RAG: ${cRag.toUpperCase()}\nProgress: ${getTotalProgress(customer.milestones)}%\n\nMilestones with date ranges (phases may overlap):\n${mCtx}\n\nRecent Calls:\n${tCtx||"None."}\n${prev?`\nPrevious Updates:\n${prev}`:""}\n\nWrite a professional 150-250 word weekly status update narrative:\n1. State overall RAG and current phase(s) — note any running in parallel\n2. Highlight accomplishments (reference specific L1s)\n3. For Amber/Red items: state the issue AND Path to Green actions\n4. Next steps for the coming week\n5. Escalation items if any Red milestones exist\n\nDirect, clear tone for leadership. Use GREEN/AMBER/RED labels. Short paragraphs, no bullets. Do NOT repeat the milestone list — that is shown separately above your text.`;
+    try{const r=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:1000,messages:[{role:"user",content:prompt}]})});const d=await r.json();const txt=d.content?.map(b=>b.text||"").join("")||"Failed.";setManualCtx(txt);}catch{setManualCtx("Error generating update.");}
     setGenUp(false);
+  };
+
+  const buildSnapshot=()=>customer.milestones.filter(l0=>!l0.isNA).map(l0=>({label:l0.label,status:l0.status,rag:l0.rag,endDate:l0.endDate}));
+
+  const saveManualUpdate=()=>{
+    const update={id:"u"+Date.now(),date:manualDate,milestoneSnapshot:manualSnapshot,context:manualCtx};
+    onUpdate({...customer,weeklyUpdates:[...customer.weeklyUpdates,update]});
+    setShowAddUpdate(false); setManualCtx(""); setManualDate(today()); setManualSnapshot([]);
   };
 
   return <div>
@@ -1428,15 +1463,28 @@ function CustomerDetailView({ customer, onUpdate, tiers }) {
           <RagPill rag={cRag} onClick={()=>{}} />
         </div>
         <div style={{fontSize:"12.5px",color:"#6b7088",marginTop:"3px"}}>{customer.onboardingManager&&<span>{customer.onboardingManager} &middot; </span>}{customer.stakeholder} &middot; {fmtDate(customer.startDate)} &rarr; {fmtDate(customer.targetDate)} &middot; {getTotalProgress(customer.milestones)}% complete{customer.forecastCompletion&&customer.baselineCompletion&&customer.forecastCompletion!==customer.baselineCompletion&&<span style={{color:"#f59e0b"}}> &middot; Forecast: {fmtDate(customer.forecastCompletion)}</span>}</div>
-        <button className="btn btn-ghost btn-sm" style={{marginTop:"6px"}} onClick={()=>setEditCust(true)}>Edit details</button>
+        <div style={{display:"flex",gap:"8px",marginTop:"6px"}}>
+          <button className="btn btn-ghost btn-sm" onClick={()=>setEditCust(true)}>Edit details</button>
+          <button className="btn btn-ghost btn-sm" onClick={()=>copyStatusUpdate(customer).then(()=>{setCopied(true);setTimeout(()=>setCopied(false),2000);})}>{copied?"✓ Copied":"Copy Status Update"}</button>
+        </div>
       </div>
     </div>
 
 {/* Phase RAG bar */}
-    <div style={{display:"flex",gap:"3px",marginBottom:"24px",height:"6px"}}>
+    <div style={{display:"flex",gap:"3px",marginBottom:"18px"}}>
       {customer.milestones.map(l0=>{
-        if (l0.isNA) return <div key={l0.id} style={{flex:1,background:"#1e2230",borderRadius:"3px",opacity:0.5}} title={`${l0.label}: N/A`} />;
-        return <div key={l0.id} style={{flex:1,background:"#1e2230",borderRadius:"3px",overflow:"hidden"}} title={`${l0.label}: ${RAG_LABELS[l0.rag]} (${getL0Progress(l0)}%)`}><div style={{width:`${getL0Progress(l0)}%`,height:"100%",background:RAG_COLORS[l0.rag],borderRadius:"3px",transition:"width 0.4s"}} /></div>
+        if (l0.isNA) return (
+          <div key={l0.id} style={{flex:1,display:"flex",flexDirection:"column",gap:"4px"}} title={`${l0.label}: N/A`}>
+            <div style={{height:"6px",background:"#1e2230",borderRadius:"3px",opacity:0.5}} />
+            <div style={{fontSize:"9px",color:"#464b5e",textAlign:"center",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{l0.label}</div>
+          </div>
+        );
+        return (
+          <div key={l0.id} style={{flex:1,display:"flex",flexDirection:"column",gap:"4px"}} title={`${l0.label}: ${RAG_LABELS[l0.rag]} (${getL0Progress(l0)}%)`}>
+            <div style={{height:"6px",background:"#1e2230",borderRadius:"3px",overflow:"hidden"}}><div style={{width:`${getL0Progress(l0)}%`,height:"100%",background:RAG_COLORS[l0.rag],borderRadius:"3px",transition:"width 0.4s"}} /></div>
+            <div style={{fontSize:"9px",color:"#6b7088",textAlign:"center",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{l0.label}</div>
+          </div>
+        );
       })}
     </div>
 
@@ -1451,8 +1499,7 @@ function CustomerDetailView({ customer, onUpdate, tiers }) {
       
       {/* Group 2: Communications & History */}
       <button className={`tab ${tab==="transcripts"?"active":""}`} onClick={()=>setTab("transcripts")}>Transcripts ({customer.transcripts.length})</button>
-      <button className={`tab ${tab==="weekly"?"active":""}`} onClick={()=>setTab("weekly")}>Weekly Update</button>
-      <button className={`tab ${tab==="history"?"active":""}`} onClick={()=>setTab("history")}>History ({customer.weeklyUpdates.length})</button>
+      <button className={`tab ${tab==="weekly"?"active":""}`} onClick={()=>setTab("weekly")}>Updates ({customer.weeklyUpdates.length})</button>
     </div>
 
     {/* ── PLAN ── */}
@@ -1546,16 +1593,107 @@ function CustomerDetailView({ customer, onUpdate, tiers }) {
       </div>)}</div>}
     </div>}
 
-    {tab==="weekly"&&<div className="card">
-      <div className="card-header"><span className="card-title">Generate Weekly Update</span><button className="btn btn-primary" onClick={genWeekly} disabled={genUp}>{genUp?"Generating...":"\u2726 Generate Update"}</button></div>
-      <p style={{fontSize:"12.5px",color:"#6b7088",marginBottom:"16px",lineHeight:1.6}}>AI-generated update using L0/L1 milestones with date ranges, RAG statuses, Path to Green actions, and previous updates.</p>
-      {genUp&&<div className="generating"><div className="generating-dot" />Analysing onboarding data...</div>}
-      {wkUp&&!genUp&&<div className="update-output">{wkUp}</div>}
-    </div>}
+    {tab==="weekly"&&(()=>{
+      const fmtSlash=d=>{if(!d)return"TBD";const dt=new Date(d);return`${String(dt.getDate()).padStart(2,"0")}/${String(dt.getMonth()+1).padStart(2,"0")}/${dt.getFullYear()}`;};
+      const statusLabel=s=>s==="complete"?"Complete":s==="in-progress"?"In Progress":"Not Started";
+      const RAG_STATUS_COLOR={blue:"#3b82f6",green:"#22c55e",amber:"#f59e0b",red:"#ef4444"};
+      const snapColor=m=>m.status==="upcoming"?"#565b6e":(RAG_STATUS_COLOR[m.rag]||"#565b6e");
 
-    {tab==="history"&&(!customer.weeklyUpdates.length?<div className="empty-state"><div className="empty-state-icon">{"\uD83D\uDCCB"}</div><div className="empty-state-text">No updates yet.</div></div>:
-      <div style={{display:"flex",flexDirection:"column",gap:"12px"}}>{[...customer.weeklyUpdates].reverse().map((u,i)=><div key={i} className="card"><div className="card-header"><span className="card-title">Update \u2014 {fmtDate(u.date)}</span></div><div className="update-output" style={{maxHeight:"200px"}}>{u.text}</div></div>)}</div>
-    )}
+      const SnapshotRow=({m})=>{
+        const c=snapColor(m);
+        return <div style={{display:"flex",alignItems:"center",gap:"10px",padding:"6px 0",borderBottom:"1px solid #1a1d28"}}>
+          <span style={{width:"9px",height:"9px",borderRadius:"50%",background:c,flexShrink:0,boxShadow:`0 0 5px ${c}70`}} />
+          <span style={{flex:1,fontSize:"12.5px",color:"#c5c8d6"}}>{m.label}</span>
+          <span style={{fontSize:"10px",padding:"2px 7px",borderRadius:"4px",background:`${c}18`,color:c,fontWeight:700,letterSpacing:"0.3px"}}>{statusLabel(m.status)}</span>
+          <span style={{fontSize:"11px",color:"#6b7088",fontFamily:"'JetBrains Mono',monospace",minWidth:"72px",textAlign:"right"}}>{fmtSlash(m.endDate)}</span>
+        </div>;
+      };
+
+      const EditableSnapshotRow=({m,onChange})=>{
+        const c=snapColor(m);
+        const sel={background:"#1a1d28",border:"1px solid #2e3348",borderRadius:"4px",color:"#c5c8d6",fontSize:"11px",padding:"2px 5px",cursor:"pointer"};
+        return <div style={{display:"flex",alignItems:"center",gap:"8px",padding:"6px 0",borderBottom:"1px solid #1a1d28"}}>
+          <span style={{width:"9px",height:"9px",borderRadius:"50%",background:c,flexShrink:0,boxShadow:`0 0 5px ${c}70`}} />
+          <span style={{flex:1,fontSize:"12.5px",color:"#c5c8d6"}}>{m.label}</span>
+          <select style={sel} value={m.status} onChange={e=>{const s=e.target.value;onChange({...m,status:s,rag:s==="upcoming"?"green":s==="complete"?"blue":m.rag==="blue"?"green":m.rag});}}>
+            <option value="upcoming">Not Started</option>
+            <option value="in-progress">In Progress</option>
+            <option value="complete">Complete</option>
+          </select>
+          {m.status!=="upcoming"&&<select style={sel} value={m.rag} onChange={e=>onChange({...m,rag:e.target.value})}>
+            <option value="green">Green</option>
+            <option value="amber">Amber</option>
+            <option value="red">Red</option>
+            <option value="blue">Blue (Done)</option>
+          </select>}
+          <input type="date" value={m.endDate||""} onChange={e=>onChange({...m,endDate:e.target.value})} style={{...sel,width:"130px",fontFamily:"'JetBrains Mono',monospace"}} />
+        </div>;
+      };
+
+      const copyUpdate=(u,uid)=>{
+        const EMOJI={blue:"🔵",green:"🟢",amber:"🟠",red:"🔴"};
+        const lines=(u.milestoneSnapshot||[]).map(m=>{
+          const emoji=m.status==="upcoming"?"⚪":(EMOJI[m.rag]||"⚪");
+          return `${emoji} ${m.label} | ${statusLabel(m.status)} | ${fmtSlash(m.endDate)}`;
+        });
+        const ctx=u.context||u.text||"";
+        const full=[...lines,...(ctx?["",ctx]:[])].join("\n");
+        navigator.clipboard.writeText(full).then(()=>{setCopiedUpdateId(uid);setTimeout(()=>setCopiedUpdateId(null),2000);}).catch(()=>{});
+      };
+
+      const sorted=[...customer.weeklyUpdates].sort((a,b)=>updatesAsc?new Date(a.date)-new Date(b.date):new Date(b.date)-new Date(a.date));
+
+      return <div style={{display:"flex",flexDirection:"column",gap:"16px"}}>
+        {/* Toolbar */}
+        <div style={{display:"flex",gap:"8px",alignItems:"center"}}>
+          {!showAddUpdate&&<>
+            <button className="btn btn-primary" onClick={()=>{setShowAddUpdate(true);setManualDate(today());setManualCtx("");setManualSnapshot(buildSnapshot());}}>+ Add Update</button>
+            <button className="btn btn-ghost" onClick={genWeekly} disabled={genUp}>{genUp?"Generating…":"✦ Generate with AI"}</button>
+          </>}
+          <div style={{flex:1}} />
+          {customer.weeklyUpdates.length>1&&<button className="btn btn-ghost btn-sm" onClick={()=>setUpdatesAsc(a=>!a)} style={{fontSize:"11px"}}>{updatesAsc?"Oldest first ↑":"Newest first ↓"}</button>}
+        </div>
+
+        {/* Composer */}
+        {showAddUpdate&&<div className="card">
+          <div className="card-header">
+            <span className="card-title">New Update</span>
+            <div style={{display:"flex",alignItems:"center",gap:"8px"}}>
+              <label style={{fontSize:"12px",color:"#6b7088"}}>Date</label>
+              <input className="input" type="date" value={manualDate} onChange={e=>setManualDate(e.target.value)} style={{width:"140px",padding:"4px 8px",fontSize:"12px"}} />
+            </div>
+          </div>
+          <div style={{fontSize:"11px",fontWeight:600,color:"#6b7088",textTransform:"uppercase",letterSpacing:"0.6px",marginBottom:"6px"}}>Milestone Status</div>
+          <div style={{marginBottom:"14px"}}>
+            {manualSnapshot.map((m,i)=><EditableSnapshotRow key={i} m={m} onChange={nm=>setManualSnapshot(prev=>prev.map((r,j)=>j===i?nm:r))} />)}
+          </div>
+          <div style={{fontSize:"11px",fontWeight:600,color:"#6b7088",textTransform:"uppercase",letterSpacing:"0.6px",marginBottom:"6px"}}>Context</div>
+          {genUp&&<div className="generating"><div className="generating-dot" />Generating narrative...</div>}
+          <textarea className="textarea" value={manualCtx} onChange={e=>setManualCtx(e.target.value)} placeholder="Add context, blockers, next steps, escalations..." style={{minHeight:"120px",marginBottom:"12px"}} />
+          <div style={{display:"flex",gap:"8px",justifyContent:"flex-end"}}>
+            <button className="btn btn-ghost" onClick={genWeekly} disabled={genUp}>{genUp?"Generating…":"✦ Generate with AI"}</button>
+            <button className="btn btn-ghost" onClick={()=>{setShowAddUpdate(false);setManualCtx("");setManualSnapshot([]);}}>Cancel</button>
+            <button className="btn btn-primary" disabled={!manualCtx.trim()} onClick={saveManualUpdate}>Save Update</button>
+          </div>
+        </div>}
+
+        {/* Update list */}
+        {!customer.weeklyUpdates.length&&!showAddUpdate&&<div className="empty-state"><div className="empty-state-icon">📋</div><div className="empty-state-text">No updates yet.</div></div>}
+        {sorted.map((u,i)=>{
+          const uid=u.id||i;
+          const hasSnap=!!u.milestoneSnapshot?.length;
+          const isCopied=copiedUpdateId===uid;
+          return <div key={uid} className="card">
+            <div className="card-header">
+              <span className="card-title">Update — {fmtDate(u.date)}</span>
+              {hasSnap&&<button className="btn btn-ghost btn-sm" style={{fontSize:"11px"}} onClick={()=>copyUpdate(u,uid)}>{isCopied?"✓ Copied":"Copy"}</button>}
+            </div>
+            {hasSnap&&<div style={{marginBottom:"8px"}}>{u.milestoneSnapshot.map((m,j)=><SnapshotRow key={j} m={m} />)}</div>}
+            {(u.context||u.text)&&<div className="update-output" style={{marginTop:hasSnap?"8px":0}}>{u.context||u.text}</div>}
+          </div>;
+        })}
+      </div>;
+    })()}
 
     {tab==="rids"&&(()=>{
       const rids = customer.rids || [];
