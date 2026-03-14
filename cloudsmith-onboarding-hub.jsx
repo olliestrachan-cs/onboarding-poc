@@ -17,6 +17,16 @@ const DEFAULT_TIERS = [
   { id: "t3", label: "Ultra", color: "#f59e0b" },
 ];
 
+const DEFAULT_COMPLEXITY = [
+  { key: "S",   capPct: 10, maxConcurrent: 6, hoursPerWeek: 4  },
+  { key: "M",   capPct: 15, maxConcurrent: 6, hoursPerWeek: 6  },
+  { key: "L",   capPct: 20, maxConcurrent: 5, hoursPerWeek: 8  },
+  { key: "XL",  capPct: 20, maxConcurrent: 4, hoursPerWeek: 8  },
+  { key: "XXL", capPct: 50, maxConcurrent: 3, hoursPerWeek: 16 },
+];
+
+const COMPLEXITY_KEYS = ["S","M","L","XL","XXL"];
+
 const RAG_LABELS = { green: "Green", amber: "Amber", red: "Red", blue: "Blue" };
 const RAG_COLORS = { green: "#22c55e", amber: "#f59e0b", red: "#ef4444", blue: "#3b82f6" };
 
@@ -41,6 +51,7 @@ function mkCustomerMilestones(tmpl) {
 const SAMPLES = [
   {
     id: "c1", name: "Acme Corp", logo: "AC", tier: "Strategic",
+    complexity: "XXL",
     startDate: "2025-07-01", targetDate: "2026-04-30",
     baselineCompletion: "2026-03-31", forecastCompletion: "2026-04-30",
     onboardingManager: "You",
@@ -102,6 +113,7 @@ const SAMPLES = [
   },
   {
     id: "c2", name: "NovaTech", logo: "NT", tier: "Ultra",
+    complexity: "S",
     startDate: "2025-10-06", targetDate: "2026-06-30",
     baselineCompletion: "2026-06-30", forecastCompletion: "2026-06-30",
     onboardingManager: "You",
@@ -147,6 +159,7 @@ const SAMPLES = [
   },
   {
     id: "c3", name: "FinanceFlow", logo: "FF", tier: "Strategic",
+    complexity: "XXL",
     startDate: "2025-04-14", targetDate: "2026-04-14",
     baselineCompletion: "2026-02-28", forecastCompletion: "2026-05-09",
     onboardingManager: "Sarah K",
@@ -200,6 +213,165 @@ const SAMPLES = [
       { id: "r3-5", type: "Issue", title: "Data residency documentation gap", severity: "Medium", status: "Closed", linkedMilestone: "c3-8", owner: "Sarah K", description: "Data residency configuration lacked documentation required for FCA audit trail.", mitigation: "Documentation completed and reviewed by legal team.", createdDate: "2025-09-20" },
     ],
   },
+  {
+    id: "c4", name: "DataStream Inc", logo: "DS", tier: "Enterprise",
+    complexity: "M",
+    startDate: "2025-11-03", targetDate: null,
+    baselineCompletion: null, forecastCompletion: null,
+    onboardingManager: "Alex M",
+    owner: "Alex M",
+    stakeholder: "Raj Mehta (Platform Lead)",
+    milestones: [
+      { ...DEFAULT_L0[0], status: "complete", rag: "blue", startDate: "2025-11-03", endDate: "2025-11-14", notes: "Smooth kickoff", pathToGreen: "", children: [
+        mkL1("c4-1", "Kickoff & goals alignment", "complete", "blue", "2025-11-03", "2025-11-07"),
+        mkL1("c4-2", "Success criteria sign-off", "complete", "blue", "2025-11-07", "2025-11-14"),
+      ]},
+      { ...DEFAULT_L0[1], status: "in-progress", rag: "green", startDate: "2025-11-17", endDate: "2026-01-30", notes: "Audit underway", pathToGreen: "", children: [
+        mkL1("c4-3", "Tooling & pipeline audit", "complete", "green", "2025-11-17", "2025-12-12"),
+        mkL1("c4-4", "Security & access review", "in-progress", "green", "2025-12-09", "2026-01-16"),
+        mkL1("c4-5", "Network requirements", "upcoming", "green", "2026-01-13", "2026-01-30"),
+      ]},
+      { ...DEFAULT_L0[2], status: "upcoming", rag: "green", startDate: "2026-02-02", endDate: "2026-03-20", notes: "", pathToGreen: "", children: [] },
+      { ...DEFAULT_L0[3], status: "upcoming", rag: "green", startDate: "2026-03-16", endDate: "2026-05-08", notes: "", pathToGreen: "", children: [] },
+      { ...DEFAULT_L0[4], status: "upcoming", rag: "green", startDate: "2026-04-27", endDate: "2026-06-12", notes: "", pathToGreen: "", children: [] },
+      { ...DEFAULT_L0[5], status: "upcoming", rag: "green", startDate: "2026-06-01", endDate: "2026-06-27", notes: "", pathToGreen: "", children: [] },
+    ],
+    transcripts: [
+      { id: "t11", date: "2025-11-05", title: "Kickoff Call", summary: "Small data platform team of 8. Primary registries are Maven and Python. Targeting 8-month onboarding with minimal disruption.", text: "Full transcript..." },
+    ],
+    weeklyUpdates: [], rids: [],
+  },
+  {
+    id: "c5", name: "MegaCorp", logo: "MC", tier: "Strategic",
+    complexity: "XXL",
+    startDate: "2025-09-08", targetDate: null,
+    baselineCompletion: null, forecastCompletion: null,
+    onboardingManager: "Sarah K",
+    owner: "Sarah K",
+    stakeholder: "Linda Park (SVP Engineering)",
+    milestones: [
+      { ...DEFAULT_L0[0], status: "complete", rag: "blue", startDate: "2025-09-08", endDate: "2025-09-26", notes: "50+ teams, complex org structure", pathToGreen: "", children: [
+        mkL1("c5-1", "Exec alignment & charter", "complete", "blue", "2025-09-08", "2025-09-15"),
+        mkL1("c5-2", "Org mapping & team inventory", "complete", "blue", "2025-09-15", "2025-09-26", "52 engineering teams identified"),
+      ]},
+      { ...DEFAULT_L0[1], status: "in-progress", rag: "amber", startDate: "2025-09-29", endDate: "2026-02-27", notes: "Multi-region, legacy Nexus + JFrog", pathToGreen: "Prioritise highest-traffic registries first. Dedicated discovery sprint with infra leads.", children: [
+        mkL1("c5-3", "Current state tooling audit", "complete", "amber", "2025-09-29", "2025-11-07", "Nexus, JFrog, and 3 homegrown registries"),
+        mkL1("c5-4", "Multi-region network assessment", "complete", "green", "2025-10-20", "2025-12-05"),
+        mkL1("c5-5", "Compliance & security scoping", "in-progress", "amber", "2025-11-24", "2026-01-30", "SOC2 + ISO27001 requirements"),
+        mkL1("c5-6", "Legacy migration path planning", "in-progress", "amber", "2026-01-05", "2026-02-27", "Nexus → Cloudsmith migration plan"),
+      ]},
+      { ...DEFAULT_L0[2], status: "upcoming", rag: "green", startDate: "2026-02-16", endDate: "2026-05-08", notes: "", pathToGreen: "", children: [] },
+      { ...DEFAULT_L0[3], status: "upcoming", rag: "green", startDate: "2026-04-20", endDate: "2026-09-11", notes: "", pathToGreen: "", children: [] },
+      { ...DEFAULT_L0[4], status: "upcoming", rag: "green", startDate: "2026-08-17", endDate: "2026-11-06", notes: "", pathToGreen: "", children: [] },
+      { ...DEFAULT_L0[5], status: "upcoming", rag: "green", startDate: "2026-10-26", endDate: "2026-12-18", notes: "", pathToGreen: "", children: [] },
+    ],
+    transcripts: [
+      { id: "t12", date: "2025-09-10", title: "Kickoff", summary: "52 engineering teams across 3 regions. Mix of Nexus, JFrog, and internal registries. Estimated 15-month onboarding. Linda needs exec dashboard from day one.", text: "Full transcript..." },
+      { id: "t13", date: "2025-12-03", title: "Discovery Review", summary: "Audit revealed 3 undocumented internal registries. SOC2 compliance requirements more complex than anticipated. Discovery phase extended by 6 weeks.", text: "Full transcript..." },
+    ],
+    weeklyUpdates: [], rids: [
+      { id: "r5-1", type: "Risk", title: "Undocumented internal registries", severity: "High", status: "Open", linkedMilestone: "c5-3", owner: "Linda Park", description: "3 internal registries discovered post-kickoff not included in original scope.", mitigation: "Extended discovery sprint to map all registries. Updated scope document sent to Linda.", createdDate: "2025-11-10" },
+    ],
+  },
+  {
+    id: "c6", name: "Vertex Cloud", logo: "VC", tier: "Enterprise",
+    complexity: "L",
+    startDate: "2025-12-01", targetDate: null,
+    baselineCompletion: null, forecastCompletion: null,
+    onboardingManager: "You",
+    owner: "You",
+    stakeholder: "Chris Ng (Head of Infra)",
+    milestones: [
+      { ...DEFAULT_L0[0], status: "complete", rag: "blue", startDate: "2025-12-01", endDate: "2025-12-12", notes: "Fast alignment", pathToGreen: "", children: [
+        mkL1("c6-1", "Kickoff & charter", "complete", "blue", "2025-12-01", "2025-12-08"),
+        mkL1("c6-2", "Success metrics definition", "complete", "blue", "2025-12-08", "2025-12-12"),
+      ]},
+      { ...DEFAULT_L0[1], status: "complete", rag: "blue", startDate: "2025-12-15", endDate: "2026-01-23", notes: "Mostly Docker + Helm", pathToGreen: "", children: [
+        mkL1("c6-3", "Tooling audit", "complete", "blue", "2025-12-15", "2026-01-02"),
+        mkL1("c6-4", "Access & permissions review", "complete", "blue", "2025-12-29", "2026-01-23"),
+      ]},
+      { ...DEFAULT_L0[2], status: "in-progress", rag: "green", startDate: "2026-01-26", endDate: "2026-03-20", notes: "SSO configured, repos in progress", pathToGreen: "", children: [
+        mkL1("c6-5", "SSO & SAML setup", "complete", "green", "2026-01-26", "2026-02-06"),
+        mkL1("c6-6", "Repository structure & naming", "complete", "green", "2026-02-03", "2026-02-20"),
+        mkL1("c6-7", "Upstream proxy config", "in-progress", "green", "2026-02-17", "2026-03-06"),
+        mkL1("c6-8", "Scanning & policy setup", "upcoming", "green", "2026-03-02", "2026-03-20"),
+      ]},
+      { ...DEFAULT_L0[3], status: "upcoming", rag: "green", startDate: "2026-03-16", endDate: "2026-05-01", notes: "", pathToGreen: "", children: [] },
+      { ...DEFAULT_L0[4], status: "upcoming", rag: "green", startDate: "2026-04-20", endDate: "2026-06-05", notes: "", pathToGreen: "", children: [] },
+      { ...DEFAULT_L0[5], status: "upcoming", rag: "green", startDate: "2026-05-25", endDate: "2026-06-26", notes: "", pathToGreen: "", children: [] },
+    ],
+    transcripts: [
+      { id: "t14", date: "2025-12-03", title: "Kickoff", summary: "Cloud-native team, 20 engineers. Primarily Docker and Helm. Chris wants minimal disruption — phased migration preferred.", text: "Full transcript..." },
+    ],
+    weeklyUpdates: [], rids: [],
+  },
+  {
+    id: "c7", name: "Synapse AI", logo: "SA", tier: "Strategic",
+    complexity: "XL",
+    startDate: "2026-01-19", targetDate: null,
+    baselineCompletion: null, forecastCompletion: null,
+    onboardingManager: "Tom B",
+    owner: "Tom B",
+    stakeholder: "Maya Osei (CTO)",
+    milestones: [
+      { ...DEFAULT_L0[0], status: "complete", rag: "blue", startDate: "2026-01-19", endDate: "2026-01-30", notes: "Strong exec buy-in", pathToGreen: "", children: [
+        mkL1("c7-1", "Kickoff & stakeholder mapping", "complete", "blue", "2026-01-19", "2026-01-23"),
+        mkL1("c7-2", "Charter & success criteria", "complete", "blue", "2026-01-23", "2026-01-30"),
+      ]},
+      { ...DEFAULT_L0[1], status: "in-progress", rag: "amber", startDate: "2026-02-02", endDate: "2026-04-17", notes: "GPU artifact registries add complexity", pathToGreen: "Engage specialist to review GPU image registry requirements.", children: [
+        mkL1("c7-3", "ML model registry audit", "complete", "green", "2026-02-02", "2026-02-20", "HuggingFace + internal registry"),
+        mkL1("c7-4", "GPU image registry scoping", "in-progress", "amber", "2026-02-17", "2026-03-27", "Novel requirement — no existing pattern"),
+        mkL1("c7-5", "Data pipeline tooling audit", "upcoming", "green", "2026-03-16", "2026-04-17"),
+      ]},
+      { ...DEFAULT_L0[2], status: "upcoming", rag: "green", startDate: "2026-04-13", endDate: "2026-06-12", notes: "", pathToGreen: "", children: [] },
+      { ...DEFAULT_L0[3], status: "upcoming", rag: "green", startDate: "2026-06-01", endDate: "2026-08-28", notes: "", pathToGreen: "", children: [] },
+      { ...DEFAULT_L0[4], status: "upcoming", rag: "green", startDate: "2026-08-17", endDate: "2026-10-09", notes: "", pathToGreen: "", children: [] },
+      { ...DEFAULT_L0[5], status: "upcoming", rag: "green", startDate: "2026-09-28", endDate: "2026-10-30", notes: "", pathToGreen: "", children: [] },
+    ],
+    transcripts: [
+      { id: "t15", date: "2026-01-21", title: "Kickoff", summary: "ML-first company with custom GPU image registry requirements. Maya wants Cloudsmith as the single source of truth for all model artefacts.", text: "Full transcript..." },
+    ],
+    weeklyUpdates: [], rids: [
+      { id: "r7-1", type: "Risk", title: "GPU image registry — no existing pattern", severity: "High", status: "Open", linkedMilestone: "c7-4", owner: "Tom B", description: "Synapse uses custom GPU base images not supported by standard registry patterns. Novel integration required.", mitigation: "Engaging Cloudsmith solutions engineering for specialist support.", createdDate: "2026-02-20" },
+    ],
+  },
+  {
+    id: "c8", name: "ByteForge", logo: "BF", tier: "Ultra",
+    complexity: "S",
+    startDate: "2025-08-04", targetDate: null,
+    baselineCompletion: null, forecastCompletion: null,
+    onboardingManager: "Alex M",
+    owner: "Alex M",
+    stakeholder: "Jake Lim (Lead Eng)",
+    milestones: [
+      { ...DEFAULT_L0[0], status: "complete", rag: "blue", startDate: "2025-08-04", endDate: "2025-08-08", notes: "", pathToGreen: "", children: [
+        mkL1("c8-1", "Kickoff", "complete", "blue", "2025-08-04", "2025-08-08"),
+      ]},
+      { ...DEFAULT_L0[1], status: "complete", rag: "blue", startDate: "2025-08-11", endDate: "2025-08-29", notes: "Simple npm-only stack", pathToGreen: "", children: [
+        mkL1("c8-2", "Tooling audit", "complete", "blue", "2025-08-11", "2025-08-22"),
+        mkL1("c8-3", "Access review", "complete", "blue", "2025-08-22", "2025-08-29"),
+      ]},
+      { ...DEFAULT_L0[2], status: "complete", rag: "blue", startDate: "2025-09-01", endDate: "2025-09-19", notes: "", pathToGreen: "", children: [
+        mkL1("c8-4", "Repo setup", "complete", "blue", "2025-09-01", "2025-09-12"),
+        mkL1("c8-5", "Token provisioning", "complete", "blue", "2025-09-12", "2025-09-19"),
+      ]},
+      { ...DEFAULT_L0[3], status: "complete", rag: "blue", startDate: "2025-09-22", endDate: "2025-10-17", notes: "", pathToGreen: "", children: [
+        mkL1("c8-6", "npm package migration", "complete", "blue", "2025-09-22", "2025-10-10"),
+        mkL1("c8-7", "CI/CD pipeline update", "complete", "blue", "2025-10-06", "2025-10-17"),
+      ]},
+      { ...DEFAULT_L0[4], status: "in-progress", rag: "green", startDate: "2025-10-20", endDate: "2025-11-07", notes: "", pathToGreen: "", children: [
+        mkL1("c8-8", "Team rollout (4 engineers)", "complete", "green", "2025-10-20", "2025-10-31"),
+        mkL1("c8-9", "Final validation", "in-progress", "green", "2025-11-03", "2025-11-07"),
+      ]},
+      { ...DEFAULT_L0[5], status: "upcoming", rag: "green", startDate: "2025-11-10", endDate: "2025-11-21", notes: "", pathToGreen: "", children: [
+        mkL1("c8-10", "Legacy registry shutdown", "upcoming", "green", "2025-11-10", "2025-11-21"),
+      ]},
+    ],
+    transcripts: [
+      { id: "t16", date: "2025-08-06", title: "Kickoff", summary: "4-person startup, npm-only. Straightforward migration expected within 4 months.", text: "Full transcript..." },
+    ],
+    weeklyUpdates: [], rids: [],
+  },
 ];
 
 // ─── Derivation ───
@@ -240,8 +412,7 @@ function getTotalProgress(ms) {
 }
 function fmtDate(d) { if(!d) return "\u2014"; return new Date(d).toLocaleDateString("en-GB",{day:"numeric",month:"short"}); }
 function fmtRange(sd, ed) { if(!sd && !ed) return "\u2014"; if(sd && ed) return `${fmtDate(sd)} \u2013 ${fmtDate(ed)}`; return fmtDate(sd || ed); }
-function weeksBetween(a,b) { return Math.ceil((new Date(b)-new Date(a))/(7*24*60*60*1000)); }
-function weekLabel(s,i) { const d=new Date(s); d.setDate(d.getDate()+i*7); return d.toLocaleDateString("en-GB",{day:"numeric",month:"short"}); }
+
 function today() { return new Date().toISOString().split("T")[0]; }
 
 const STATUS_CYCLE=["upcoming","in-progress","complete"];
@@ -498,6 +669,21 @@ const styles = `
   .ptable th:hover { color:#8b8fa3; }
   .ptable th.sorted { color:#818cf8; }
   .ptable th .sort-arrow { margin-left:4px; font-size:9px; }
+  .complexity-badge { display:inline-block; padding:1px 8px; border-radius:4px; font-size:10px; font-weight:700; letter-spacing:0.5px; }
+  .complexity-S { background:rgba(34,197,94,0.12); color:#22c55e; }
+  .complexity-M { background:rgba(14,165,233,0.12); color:#0ea5e9; }
+  .complexity-L { background:rgba(139,92,246,0.12); color:#8b5cf6; }
+  .complexity-XL { background:rgba(245,158,11,0.12); color:#f59e0b; }
+  .complexity-XXL { background:rgba(239,68,68,0.12); color:#ef4444; }
+  .cap-bar-track { height:8px; background:#1e2230; border-radius:4px; overflow:hidden; }
+  .cap-bar-fill { height:100%; border-radius:4px; transition:width 0.4s ease; }
+  .cap-input { background:#1a1d28; border:1px solid #2e3348; border-radius:4px; color:#c5c8d6; font-size:12px; padding:3px 6px; width:58px; font-family:'JetBrains Mono',monospace; text-align:right; }
+  .cap-input:focus { outline:none; border-color:#6366f1; }
+  .cap-table { width:100%; border-collapse:collapse; }
+  .cap-table th { text-align:left; padding:8px 12px; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.6px; color:#464b5e; border-bottom:1px solid #1e2230; }
+  .cap-table td { padding:8px 12px; border-bottom:1px solid #1a1d28; vertical-align:middle; }
+  .manager-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:16px; }
+  .over-cap-warning { margin-top:8px; padding:6px 10px; background:rgba(239,68,68,0.08); border-radius:6px; font-size:11px; color:#ef4444; border-left:3px solid #ef4444; }
   .ptable td { padding:9px 12px; font-size:12.5px; color:#c5c8d6; border-bottom:1px solid #1a1d28; white-space:nowrap; vertical-align:middle; }
   .ptable tr { transition:background 0.12s; }
   .ptable tr:hover { background:#181b26; }
@@ -552,7 +738,7 @@ function TierBadge({ tier, tiers }) {
 
 // ─── Modals ───
 function AddCustomerModal({ onClose, onAdd, tmpl, tiers }) {
-  const [name,setName]=useState(""); const [tier,setTier]=useState(tiers[0]?.label||""); const [stakeholder,setStakeholder]=useState(""); const [sd,setSd]=useState(""); const [mgr,setMgr]=useState("You");
+  const [name,setName]=useState(""); const [tier,setTier]=useState(tiers[0]?.label||""); const [stakeholder,setStakeholder]=useState(""); const [sd,setSd]=useState(""); const [mgr,setMgr]=useState("You"); const [complexity,setComplexity]=useState("M");
   return (
     <div className="modal-overlay" onClick={onClose}><div className="modal" onClick={e=>e.stopPropagation()}>
       <div className="modal-title">Add New Customer</div>
@@ -565,11 +751,14 @@ function AddCustomerModal({ onClose, onAdd, tmpl, tiers }) {
         <div className="form-group"><label className="form-label">Onboarding Manager</label><input className="input" value={mgr} onChange={e=>setMgr(e.target.value)} placeholder="e.g. You" /></div>
       </div>
       <div className="form-row">
+        <div className="form-group"><label className="form-label">Complexity</label><select className="input select-input" value={complexity} onChange={e=>setComplexity(e.target.value)}>{COMPLEXITY_KEYS.map(k=><option key={k} value={k}>{k}</option>)}</select></div>
+      </div>
+      <div className="form-row">
         <div className="form-group"><label className="form-label">Start Date *</label><input className="input" type="date" value={sd} onChange={e=>setSd(e.target.value)} /></div>
       </div>
       <div className="modal-actions">
         <button className="btn btn-ghost" onClick={onClose}>Cancel</button>
-        <button className="btn btn-primary" disabled={!name||!sd} onClick={()=>onAdd({id:"c"+Date.now(),name,logo:name.split(" ").map(w=>w[0]).join("").slice(0,2).toUpperCase(),tier,startDate:sd,targetDate:null,baselineCompletion:null,forecastCompletion:null,onboardingManager:mgr,owner:mgr,stakeholder,milestones:mkCustomerMilestones(tmpl),transcripts:[],weeklyUpdates:[],rids:[]})}>Add Customer</button>
+        <button className="btn btn-primary" disabled={!name||!sd} onClick={()=>onAdd({id:"c"+Date.now(),name,logo:name.split(" ").map(w=>w[0]).join("").slice(0,2).toUpperCase(),tier,complexity,startDate:sd,targetDate:null,baselineCompletion:null,forecastCompletion:null,onboardingManager:mgr,owner:mgr,stakeholder,milestones:mkCustomerMilestones(tmpl),transcripts:[],weeklyUpdates:[],rids:[]})}>Add Customer</button>
       </div>
     </div></div>
   );
@@ -594,6 +783,7 @@ function AddTranscriptModal({ onClose, onAdd }) {
 function EditCustomerModal({ customer, onClose, onSave, tiers }) {
   const [name,setName]=useState(customer.name);
   const [tier,setTier]=useState(customer.tier);
+  const [complexity,setComplexity]=useState(customer.complexity||"M");
   const [stakeholder,setStakeholder]=useState(customer.stakeholder);
   const [mgr,setMgr]=useState(customer.onboardingManager||"");
   const [sd,setSd]=useState(customer.startDate||"");
@@ -607,6 +797,9 @@ function EditCustomerModal({ customer, onClose, onSave, tiers }) {
         <div className="form-group"><label className="form-label">Tier</label><select className="input select-input" value={tier} onChange={e=>setTier(e.target.value)}>{(tiers||[]).map(t=><option key={t.id} value={t.label}>{t.label}</option>)}{!tiers?.find(t=>t.label===tier)&&<option value={tier}>{tier}</option>}</select></div>
       </div>
       <div className="form-row">
+        <div className="form-group"><label className="form-label">Complexity</label><select className="input select-input" value={complexity} onChange={e=>setComplexity(e.target.value)}>{COMPLEXITY_KEYS.map(k=><option key={k} value={k}>{k}</option>)}</select></div>
+      </div>
+      <div className="form-row">
         <div className="form-group"><label className="form-label">Key Stakeholder</label><input className="input" value={stakeholder} onChange={e=>setStakeholder(e.target.value)} /></div>
         <div className="form-group"><label className="form-label">Onboarding Manager</label><input className="input" value={mgr} onChange={e=>setMgr(e.target.value)} /></div>
       </div>
@@ -618,7 +811,7 @@ function EditCustomerModal({ customer, onClose, onSave, tiers }) {
         <div className="form-group"><label className="form-label">Forecast Completion</label><input className="input" type="date" value={fc} onChange={e=>setFc(e.target.value)} /><div style={{fontSize:"10px",color:"#464b5e",marginTop:"4px"}}>Current best estimate</div></div>
       </div>
       <div className="modal-actions"><button className="btn btn-ghost" onClick={onClose}>Cancel</button>
-        <button className="btn btn-primary" onClick={()=>onSave({...customer,name,tier,stakeholder,onboardingManager:mgr,startDate:sd||null,baselineCompletion:bc||null,forecastCompletion:fc||null,logo:name.split(" ").map(w=>w[0]).join("").slice(0,2).toUpperCase()})}>Save</button>
+        <button className="btn btn-primary" onClick={()=>onSave({...customer,name,tier,complexity,stakeholder,onboardingManager:mgr,startDate:sd||null,baselineCompletion:bc||null,forecastCompletion:fc||null,logo:name.split(" ").map(w=>w[0]).join("").slice(0,2).toUpperCase()})}>Save</button>
       </div>
     </div></div>
   );
@@ -814,22 +1007,50 @@ function TierSettings({ tiers, onSave, onClose }) {
 }
 
 // ─── Dashboard Gantt ───
-function GanttChart({ customers, onSelectCustomer, showProgress = true }) {
+function GanttChart({ customers, onSelectCustomer, showProgress = true, ganttView = "month" }) {
   if(!customers.length) return <div className="empty-state"><div className="empty-state-text">No customers yet</div></div>;
-  const allD=customers.flatMap(c=>[new Date(c.startDate),new Date(c.targetDate)]);
-  const mn=new Date(Math.min(...allD)); mn.setDate(mn.getDate()-7);
-  const mx=new Date(Math.max(...allD)); mx.setDate(mx.getDate()+14);
-  const tw=weeksBetween(mn,mx); const ws=Array.from({length:tw},(_,i)=>i);
-  const tp=(weeksBetween(mn,new Date())/tw)*100;
+
+  const getEffEnd = c => {
+    if (c.targetDate) return new Date(c.targetDate);
+    if (c.forecastCompletion) return new Date(c.forecastCompletion);
+    const withEnd = [...c.milestones].filter(m=>m.endDate).reverse();
+    if (withEnd.length) return new Date(withEnd[0].endDate);
+    const d = new Date(c.startDate); d.setFullYear(d.getFullYear()+1); return d;
+  };
+
+  const starts = customers.map(c=>new Date(c.startDate)).filter(d=>!isNaN(d.getTime()));
+  const ends   = customers.map(c=>getEffEnd(c)).filter(d=>!isNaN(d.getTime()));
+
+  const UNIT_DAYS = ganttView==="week" ? 7 : ganttView==="month" ? 30 : 91;
+  const unitMs = UNIT_DAYS * 86400000;
+
+  const mn = new Date(Math.min(...starts)); mn.setTime(mn.getTime() - unitMs);
+  const mx = new Date(Math.max(...ends));   mx.setTime(mx.getTime() + unitMs);
+  const totalMs = mx - mn;
+  const numUnits = Math.max(1, Math.ceil(totalMs / unitMs));
+  const units = Array.from({length:numUnits},(_,i)=>i);
+
+  const pct = d => { if(!d) return null; const dt=new Date(d); if(isNaN(dt.getTime())) return null; return Math.max(0,Math.min(100,((dt-mn)/totalMs)*100)); };
+
+  const unitLabel = i => {
+    const d = new Date(mn.getTime() + i * unitMs);
+    if(ganttView==="week")    return d.toLocaleDateString("en-GB",{day:"numeric",month:"short"});
+    if(ganttView==="month")   return d.toLocaleDateString("en-GB",{month:"short",year:"2-digit"});
+    return `Q${Math.floor(d.getMonth()/3)+1} '${String(d.getFullYear()).slice(2)}`;
+  };
+
+  const showEvery = ganttView==="week" ? 2 : 1;
+  const todayPct = pct(new Date());
+
   return (
     <div className="gantt-wrapper">
-      <div className="gantt-header">{ws.map(w=><div key={w} className="gantt-week">{w%2===0?weekLabel(mn,w):""}</div>)}</div>
+      <div className="gantt-header">{units.map(u=><div key={u} className="gantt-week">{u%showEvery===0?unitLabel(u):""}</div>)}</div>
       {customers.map((c,ci)=>{
         const cRag=deriveCustomerRag(c.milestones);
-        const s=weeksBetween(mn,new Date(c.startDate)),e=weeksBetween(mn,new Date(c.targetDate));
-        const p=getTotalProgress(c.milestones),l=(s/tw)*100,wd=((e-s)/tw)*100;
-        const filledW = wd*(p/100);
-        const remainW = wd - filledW;
+        const sp=pct(c.startDate), ep=pct(getEffEnd(c));
+        if(sp===null||ep===null) return null;
+        const barW=Math.max(ep-sp,0.5), prog=getTotalProgress(c.milestones);
+        const filledW=barW*(prog/100), remainW=barW-filledW;
         return <div key={c.id} className="gantt-row">
           <div className="gantt-label" style={{cursor:"pointer"}} onClick={()=>onSelectCustomer&&onSelectCustomer(c.id)}>
             <span className="rag-dot" style={{background:RAG_COLORS[cRag],width:"8px",height:"8px"}} />
@@ -837,16 +1058,14 @@ function GanttChart({ customers, onSelectCustomer, showProgress = true }) {
             <span className="gantt-customer-name" style={{color:"#c5c8ff"}}>{c.name}</span>
           </div>
           <div className="gantt-cells" style={{position:"relative"}}>
-            {ws.map(w=><div key={w} className="gantt-cell" />)}
+            {units.map(u=><div key={u} className="gantt-cell" />)}
             {showProgress ? <>
-              {/* Progress mode: filled + remaining */}
-              {filledW > 0 && <div className="gantt-bar-segment" style={{left:`${l}%`,width:`${filledW}%`,background:`linear-gradient(90deg,${RAG_COLORS[cRag]}88,${RAG_COLORS[cRag]}cc)`,zIndex:1,borderRadius: remainW > 0 ? "3px 0 0 3px" : "3px"}} />}
-              {remainW > 0 && <div className="gantt-bar-segment" style={{left:`${l + filledW}%`,width:`${remainW}%`,background:"#1e2230",zIndex:1,borderRadius: filledW > 0 ? "0 3px 3px 0" : "3px"}} />}
+              {filledW > 0 && <div className="gantt-bar-segment" style={{left:`${sp}%`,width:`${filledW}%`,background:`linear-gradient(90deg,${RAG_COLORS[cRag]}88,${RAG_COLORS[cRag]}cc)`,zIndex:1,borderRadius:remainW>0?"3px 0 0 3px":"3px"}} />}
+              {remainW > 0 && <div className="gantt-bar-segment" style={{left:`${sp+filledW}%`,width:`${remainW}%`,background:"#1e2230",zIndex:1,borderRadius:filledW>0?"0 3px 3px 0":"3px"}} />}
             </> : <>
-              {/* RAG status mode: solid bar */}
-              <div className="gantt-bar-segment" style={{left:`${l}%`,width:`${wd}%`,background:`linear-gradient(90deg,${RAG_COLORS[cRag]}88,${RAG_COLORS[cRag]}cc)`,zIndex:1,borderRadius:"3px"}} />
+              <div className="gantt-bar-segment" style={{left:`${sp}%`,width:`${barW}%`,background:`linear-gradient(90deg,${RAG_COLORS[cRag]}88,${RAG_COLORS[cRag]}cc)`,zIndex:1,borderRadius:"3px"}} />
             </>}
-            {tp>0&&tp<100&&<div style={{position:"absolute",top:"-4px",bottom:"-4px",left:`${tp}%`,width:"2px",background:"#ef4444",zIndex:2,opacity:0.7}}>{ci===0&&<span style={{position:"absolute",top:"-16px",left:"-14px",fontSize:"9px",color:"#ef4444",fontWeight:600,textTransform:"uppercase",whiteSpace:"nowrap"}}>Today</span>}</div>}
+            {todayPct>0&&todayPct<100&&<div style={{position:"absolute",top:"-4px",bottom:"-4px",left:`${todayPct}%`,width:"2px",background:"#ef4444",zIndex:2,opacity:0.7}}>{ci===0&&<span style={{position:"absolute",top:"-16px",left:"-14px",fontSize:"9px",color:"#ef4444",fontWeight:600,textTransform:"uppercase",whiteSpace:"nowrap"}}>Today</span>}</div>}
           </div>
         </div>;
       })}
@@ -1302,6 +1521,7 @@ function DashboardView({ customers, onSelectCustomer, onUpdateCustomer, tiers })
   const ambers=customers.filter(c=>deriveCustomerRag(c.milestones)==="amber").length;
   const reds=customers.filter(c=>deriveCustomerRag(c.milestones)==="red").length;
   const [dashShowProgress,setDashShowProgress]=useState(true);
+  const [ganttView,setGanttView]=useState("month");
 
   return <div>
     <div className="stats-grid">
@@ -1313,9 +1533,14 @@ function DashboardView({ customers, onSelectCustomer, onUpdateCustomer, tiers })
     <div className="card">
       <div className="card-header">
         <span className="card-title">Onboarding Timeline</span>
-        <button className={`btn btn-sm ${dashShowProgress?"btn-primary":"btn-ghost"}`} onClick={()=>setDashShowProgress(p=>!p)} style={{fontSize:"11px"}}>{dashShowProgress?"Progress":"RAG Status"}</button>
+        <div style={{display:"flex",gap:"8px",alignItems:"center"}}>
+          <div style={{display:"flex",gap:"2px",background:"#1a1d28",borderRadius:"6px",padding:"2px"}}>
+            {["week","month","quarter"].map(v=><button key={v} onClick={()=>setGanttView(v)} style={{fontSize:"10px",padding:"3px 9px",borderRadius:"4px",border:"none",cursor:"pointer",background:ganttView===v?"#2e3348":"transparent",color:ganttView===v?"#c5c8d6":"#565b6e",fontFamily:"'DM Sans',sans-serif",fontWeight:600,textTransform:"capitalize"}}>{v.charAt(0).toUpperCase()+v.slice(1)}</button>)}
+          </div>
+          <button className={`btn btn-sm ${dashShowProgress?"btn-primary":"btn-ghost"}`} onClick={()=>setDashShowProgress(p=>!p)} style={{fontSize:"11px"}}>{dashShowProgress?"Progress":"RAG Status"}</button>
+        </div>
       </div>
-      <GanttChart customers={customers} onSelectCustomer={onSelectCustomer} showProgress={dashShowProgress} />
+      <GanttChart customers={customers} onSelectCustomer={onSelectCustomer} showProgress={dashShowProgress} ganttView={ganttView} />
     </div>
     <div className="card">
       <div className="card-header"><span className="card-title">Portfolio</span></div>
@@ -1337,6 +1562,7 @@ function CustomerDetailView({ customer, onUpdate, tiers }) {
   const [manualCtx,setManualCtx]=useState("");
   const [editCust,setEditCust]=useState(false);
   const [editRid,setEditRid]=useState(null); // null = closed, {} = new, {id:...} = editing
+  const [viewingTranscript,setViewingTranscript]=useState(null);
   const [copied,setCopied]=useState(false);
   const [updatesAsc,setUpdatesAsc]=useState(false);
   const [manualSnapshot,setManualSnapshot]=useState([]);
@@ -1586,11 +1812,24 @@ function CustomerDetailView({ customer, onUpdate, tiers }) {
       <div className="gong-notice"><strong>Gong Integration:</strong> In production, connects to Gong API (v2/calls) to auto-import. Paste manually for now.</div>
       <div style={{marginBottom:"12px"}}><button className="btn btn-primary" onClick={()=>setShowAddTr(true)}>+ Add Transcript</button></div>
       {!customer.transcripts.length?<div className="empty-state"><div className="empty-state-icon">{"\uD83C\uDF99"}</div><div className="empty-state-text">No transcripts yet.</div></div>:
-      <div className="transcript-list">{customer.transcripts.map(t=><div key={t.id} className="transcript-item">
+      <div className="transcript-list">{customer.transcripts.map(t=><div key={t.id} className="transcript-item" style={{cursor:"pointer"}} onClick={()=>setViewingTranscript(t)}>
         <span className="transcript-date">{fmtDate(t.date)}</span>
-        <div><div className="transcript-title">{t.title}</div><div className="transcript-summary">{t.summary||<span style={{fontStyle:"italic",color:"#464b5e"}}>No summary yet</span>}</div></div>
-        {!t.summary&&<button className="btn btn-ghost" style={{fontSize:"11px",whiteSpace:"nowrap"}} onClick={()=>summarize(t)}>{"\u2726"} Summarise</button>}
+        <div style={{flex:1}}><div className="transcript-title">{t.title}</div><div className="transcript-summary">{t.summary||<span style={{fontStyle:"italic",color:"#464b5e"}}>No summary yet</span>}</div></div>
+        {!t.summary&&<button className="btn btn-ghost" style={{fontSize:"11px",whiteSpace:"nowrap"}} onClick={e=>{e.stopPropagation();summarize(t);}}>{"\u2726"} Summarise</button>}
       </div>)}</div>}
+    {viewingTranscript&&<div className="modal-overlay" onClick={()=>setViewingTranscript(null)}><div className="modal" style={{maxWidth:"680px",width:"100%"}} onClick={e=>e.stopPropagation()}>
+      <div className="modal-title" style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+        <span>{viewingTranscript.title}</span>
+        <button className="btn btn-ghost btn-sm" onClick={()=>setViewingTranscript(null)}>✕</button>
+      </div>
+      <div style={{fontSize:"11px",color:"#6b7088",marginBottom:"12px"}}>{fmtDate(viewingTranscript.date)}</div>
+      {viewingTranscript.summary&&<div style={{marginBottom:"16px",padding:"10px 12px",background:"#1a1d28",borderRadius:"6px",fontSize:"12.5px",color:"#c5c8d6",lineHeight:1.6,borderLeft:"3px solid #6366f1"}}>
+        <div style={{fontSize:"10px",fontWeight:700,color:"#6366f1",textTransform:"uppercase",letterSpacing:"0.6px",marginBottom:"6px"}}>Summary</div>
+        {viewingTranscript.summary}
+      </div>}
+      <div style={{fontSize:"10px",fontWeight:700,color:"#6b7088",textTransform:"uppercase",letterSpacing:"0.6px",marginBottom:"8px"}}>Full Transcript</div>
+      <div style={{fontSize:"12.5px",color:"#c5c8d6",lineHeight:1.7,whiteSpace:"pre-wrap",maxHeight:"480px",overflowY:"auto",padding:"12px",background:"#1a1d28",borderRadius:"6px"}}>{viewingTranscript.text}</div>
+    </div></div>}
     </div>}
 
     {tab==="weekly"&&(()=>{
@@ -1803,6 +2042,122 @@ function CustomerDetailView({ customer, onUpdate, tiers }) {
   </div>;
 }
 
+function ComplexityBadge({ complexity }) {
+  const k = complexity || "M";
+  return <span className={`complexity-badge complexity-${k}`}>{k}</span>;
+}
+
+function CapacityView({ customers, complexityConfig, onUpdateComplexity }) {
+  const [cfg, setCfg] = useState([...complexityConfig]);
+  const [dirty, setDirty] = useState(false);
+
+  const cfgRow = key => cfg.find(r => r.key === key) || { capPct: 10, maxConcurrent: 6, hoursPerWeek: 4 };
+  const isActive = c => getTotalProgress(c.milestones) < 100;
+  const active = customers.filter(isActive);
+  const managers = [...new Set(customers.map(c => c.onboardingManager || "Unassigned"))].sort();
+
+  const updateCfg = (key, field, val) => {
+    setCfg(prev => prev.map(r => r.key === key ? { ...r, [field]: Math.max(1, +val || 1) } : r));
+    setDirty(true);
+  };
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+
+      {/* Capacity Table */}
+      <div className="card">
+        <div className="card-header">
+          <span className="card-title">Complexity Capacity Table</span>
+          <div style={{ display: "flex", gap: "8px" }}>
+            {dirty && <button className="btn btn-primary btn-sm" onClick={() => { onUpdateComplexity(cfg); setDirty(false); }}>Save changes</button>}
+            <button className="btn btn-ghost btn-sm" onClick={() => { setCfg([...DEFAULT_COMPLEXITY]); setDirty(true); }}>Reset defaults</button>
+          </div>
+        </div>
+        <p style={{ fontSize: "12.5px", color: "#6b7088", marginBottom: "14px", lineHeight: 1.5 }}>
+          Define how much capacity each complexity tier consumes per onboarding manager. Click any value to edit.
+        </p>
+        <table className="cap-table">
+          <thead>
+            <tr>
+              <th>Complexity</th>
+              <th>Max concurrent</th>
+              <th>Capacity % per onboarding</th>
+              <th>Hours / week per onboarding</th>
+            </tr>
+          </thead>
+          <tbody>
+            {cfg.map(row => (
+              <tr key={row.key}>
+                <td><ComplexityBadge complexity={row.key} /></td>
+                <td><input className="cap-input" type="number" min={1} max={20} value={row.maxConcurrent} onChange={e => updateCfg(row.key, "maxConcurrent", e.target.value)} /></td>
+                <td><div style={{ display: "flex", alignItems: "center", gap: "4px" }}><input className="cap-input" type="number" min={1} max={100} value={row.capPct} onChange={e => updateCfg(row.key, "capPct", e.target.value)} /><span style={{ fontSize: "12px", color: "#6b7088" }}>%</span></div></td>
+                <td><div style={{ display: "flex", alignItems: "center", gap: "4px" }}><input className="cap-input" type="number" min={1} max={80} value={row.hoursPerWeek} onChange={e => updateCfg(row.key, "hoursPerWeek", e.target.value)} /><span style={{ fontSize: "12px", color: "#6b7088" }}>hrs</span></div></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Per-manager cards */}
+      <div>
+        <div style={{ fontSize: "13px", fontWeight: 600, color: "#c5c8d6", marginBottom: "12px" }}>Manager Capacity</div>
+        <div className="manager-grid">
+          {managers.map(mgr => {
+            const mgrActive = active.filter(c => (c.onboardingManager || "Unassigned") === mgr);
+            const mgrAll = customers.filter(c => (c.onboardingManager || "Unassigned") === mgr);
+            const totalCap = mgrActive.reduce((s, c) => s + cfgRow(c.complexity || "M").capPct, 0);
+            const totalHrs = mgrActive.reduce((s, c) => s + cfgRow(c.complexity || "M").hoursPerWeek, 0);
+            const capColor = totalCap >= 100 ? "#ef4444" : totalCap >= 75 ? "#f59e0b" : "#22c55e";
+            const overCap = mgrActive.some(c => {
+              const maxC = cfgRow(c.complexity || "M").maxConcurrent;
+              return mgrActive.filter(x => (x.complexity || "M") === (c.complexity || "M")).length > maxC;
+            });
+
+            return (
+              <div key={mgr} className="card">
+                <div className="card-header" style={{ marginBottom: "10px" }}>
+                  <span className="card-title">{mgr}</span>
+                  <span style={{ fontSize: "12px", color: capColor, fontWeight: 700 }}>{totalCap}%</span>
+                </div>
+                <div style={{ marginBottom: "12px" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "5px" }}>
+                    <span style={{ fontSize: "11px", color: "#6b7088" }}>{mgrActive.length} active · {mgrAll.length - mgrActive.length} complete · {totalHrs} hrs/wk</span>
+                    <span style={{ fontSize: "11px", color: capColor, fontWeight: 600 }}>{totalCap}% capacity</span>
+                  </div>
+                  <div className="cap-bar-track">
+                    <div className="cap-bar-fill" style={{ width: `${Math.min(totalCap, 100)}%`, background: capColor }} />
+                  </div>
+                </div>
+                {mgrActive.length === 0
+                  ? <div style={{ fontSize: "12px", color: "#464b5e", fontStyle: "italic" }}>No active onboardings</div>
+                  : mgrActive.map(c => {
+                    const row = cfgRow(c.complexity || "M");
+                    const cRag = deriveCustomerRag(c.milestones);
+                    const prog = getTotalProgress(c.milestones);
+                    return (
+                      <div key={c.id} style={{ display: "flex", alignItems: "center", gap: "10px", padding: "7px 0", borderTop: "1px solid #1a1d28" }}>
+                        <ComplexityBadge complexity={c.complexity || "M"} />
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontSize: "12.5px", color: "#c5c8d6", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c.name}</div>
+                          <div style={{ fontSize: "11px", color: "#6b7088" }}>{row.capPct}% · {row.hoursPerWeek}h/wk</div>
+                        </div>
+                        <span className="rag-dot" style={{ background: RAG_COLORS[cRag], flexShrink: 0 }} />
+                        <span style={{ fontSize: "11px", color: "#8b8fa3", fontFamily: "'JetBrains Mono',monospace", minWidth: "28px", textAlign: "right" }}>{prog}%</span>
+                      </div>
+                    );
+                  })
+                }
+                {overCap && <div className="over-cap-warning">⚠ Exceeds max concurrent for one or more complexity tiers</div>}
+                {totalCap > 100 && <div className="over-cap-warning">⚠ Over capacity — {totalCap - 100}% above limit</div>}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── App ───
 function App() {
   const [customers,setCustomers]=useState(SAMPLES);
@@ -1811,6 +2166,7 @@ function App() {
   const [showAdd,setShowAdd]=useState(false);
   const [tmpl,setTmpl]=useState(DEFAULT_L0);
   const [tiers,setTiers]=useState(DEFAULT_TIERS);
+  const [complexityConfig,setComplexityConfig]=useState(DEFAULT_COMPLEXITY);
 
   useEffect(()=>{
     const l=document.createElement("link");l.rel="stylesheet";l.href=FONT_LINK;document.head.appendChild(l);
@@ -1828,6 +2184,7 @@ function App() {
       </div>
       <div className="sidebar-nav">
         <button className={`nav-item ${view==="dashboard"?"active":""}`} onClick={()=>{setView("dashboard");setSelId(null);}}><span className="nav-icon">{"\u25EB"}</span> Dashboard</button>
+        <button className={`nav-item ${view==="capacity"?"active":""}`} onClick={()=>setView("capacity")}><span className="nav-icon">◈</span> Capacity</button>
         <button className={`nav-item ${view==="settings"?"active":""}`} onClick={()=>setView("settings")}><span className="nav-icon">{"\u2699"}</span> Settings</button>
       </div>
       <div className="sidebar-customers">
@@ -1844,11 +2201,12 @@ function App() {
     <div className="main">
       <div className="main-header">
         <div>
-          <div className="main-title">{view==="customer"&&cur?cur.name:view==="settings"?"Workspace Settings":"Dashboard"}</div>
+          <div className="main-title">{view==="customer"&&cur?cur.name:view==="settings"?"Workspace Settings":view==="capacity"?"Capacity Planning":"Dashboard"}</div>
           <div className="main-subtitle">
             {view==="dashboard"&&`${customers.length} active onboardings`}
             {view==="customer"&&cur&&`${cur.tier} \u00B7 ${cur.stakeholder}`}
             {view==="settings"&&"Manage default templates and categorization"}
+            {view==="capacity"&&`${customers.length} onboardings across ${[...new Set(customers.map(c=>c.onboardingManager||"Unassigned"))].length} managers`}
           </div>
         </div>
         {view==="dashboard"&&<button className="btn btn-primary" onClick={()=>setShowAdd(true)}>+ New Customer</button>}
@@ -1856,6 +2214,7 @@ function App() {
       <div className="main-body">
         {view==="dashboard"&&<DashboardView customers={customers} onSelectCustomer={id=>{setSelId(id);setView("customer");}} onUpdateCustomer={u=>setCustomers(customers.map(c=>c.id===u.id?u:c))} tiers={tiers} />}
         {view==="customer"&&cur&&<CustomerDetailView customer={cur} onUpdate={u=>setCustomers(customers.map(c=>c.id===u.id?u:c))} tiers={tiers} />}
+        {view==="capacity"&&<CapacityView customers={customers} complexityConfig={complexityConfig} onUpdateComplexity={setComplexityConfig} />}
         
         {/* Settings View - Grouped Phase Template & Tiers */}
         {view==="settings"&&(
