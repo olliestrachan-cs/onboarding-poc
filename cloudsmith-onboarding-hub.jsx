@@ -372,6 +372,64 @@ const SAMPLES = [
     ],
     weeklyUpdates: [], rids: [],
   },
+  {
+    id: "c9", name: "PeakSystems", logo: "PS", tier: "Enterprise",
+    complexity: "M",
+    startDate: "2025-02-10", targetDate: "2025-10-31",
+    baselineCompletion: "2025-10-31", forecastCompletion: "2025-10-24",
+    onboardingManager: "Tom B",
+    owner: "Tom B",
+    stakeholder: "Anna Kovacs (VP Platform)",
+    milestones: [
+      { ...DEFAULT_L0[0], status: "complete", rag: "blue", startDate: "2025-02-10", endDate: "2025-02-21", notes: "Clean kickoff, clear goals", pathToGreen: "", children: [
+        mkL1("c9-1", "Kickoff & stakeholder alignment", "complete", "blue", "2025-02-10", "2025-02-14"),
+        mkL1("c9-2", "Success criteria & charter sign-off", "complete", "blue", "2025-02-14", "2025-02-21"),
+      ]},
+      { ...DEFAULT_L0[1], status: "complete", rag: "blue", startDate: "2025-02-24", endDate: "2025-04-04", notes: "Straightforward stack — npm, Docker, Helm", pathToGreen: "", children: [
+        mkL1("c9-3", "Tooling & pipeline audit", "complete", "blue", "2025-02-24", "2025-03-14"),
+        mkL1("c9-4", "Access & permissions review", "complete", "blue", "2025-03-10", "2025-03-28"),
+        mkL1("c9-5", "Network & firewall assessment", "complete", "blue", "2025-03-24", "2025-04-04"),
+      ]},
+      { ...DEFAULT_L0[2], status: "complete", rag: "blue", startDate: "2025-04-07", endDate: "2025-05-30", notes: "SSO via Okta, 18 repos configured", pathToGreen: "", children: [
+        mkL1("c9-6", "SSO / SAML setup (Okta)", "complete", "blue", "2025-04-07", "2025-04-25"),
+        mkL1("c9-7", "Repository structure design", "complete", "blue", "2025-04-21", "2025-05-09"),
+        mkL1("c9-8", "Upstream proxy & retention policies", "complete", "blue", "2025-05-05", "2025-05-23"),
+        mkL1("c9-9", "Vulnerability scanning setup", "complete", "blue", "2025-05-19", "2025-05-30"),
+      ]},
+      { ...DEFAULT_L0[3], status: "complete", rag: "blue", startDate: "2025-06-02", endDate: "2025-08-08", notes: "Completed ahead of schedule", pathToGreen: "", children: [
+        mkL1("c9-10", "npm package migration (85 packages)", "complete", "blue", "2025-06-02", "2025-06-27"),
+        mkL1("c9-11", "Docker image migration (42 images)", "complete", "blue", "2025-06-23", "2025-07-18"),
+        mkL1("c9-12", "Helm chart migration", "complete", "blue", "2025-07-14", "2025-08-01"),
+        mkL1("c9-13", "CI/CD pipeline rewiring", "complete", "blue", "2025-07-28", "2025-08-08"),
+      ]},
+      { ...DEFAULT_L0[4], status: "complete", rag: "blue", startDate: "2025-08-11", endDate: "2025-09-26", notes: "Smooth rollout, no blockers", pathToGreen: "", children: [
+        mkL1("c9-14", "Pilot team rollout (Platform team)", "complete", "blue", "2025-08-11", "2025-08-29"),
+        mkL1("c9-15", "Full engineering rollout (3 teams)", "complete", "blue", "2025-08-25", "2025-09-19"),
+        mkL1("c9-16", "Training sessions", "complete", "blue", "2025-09-08", "2025-09-26"),
+      ]},
+      { ...DEFAULT_L0[5], status: "complete", rag: "blue", startDate: "2025-09-29", endDate: "2025-10-24", notes: "Completed 7 days early", pathToGreen: "", children: [
+        mkL1("c9-17", "Legacy registry read-only period", "complete", "blue", "2025-09-29", "2025-10-17"),
+        mkL1("c9-18", "Legacy registry shutdown", "complete", "blue", "2025-10-13", "2025-10-24"),
+        mkL1("c9-19", "Post-migration audit & sign-off", "complete", "blue", "2025-10-20", "2025-10-24"),
+      ]},
+    ],
+    transcripts: [
+      { id: "t17", date: "2025-02-12", title: "Kickoff", summary: "18-engineer platform team. npm, Docker and Helm registries. Anna wants zero downtime migration. Targeting 9 months.", text: "Full kickoff transcript..." },
+      { id: "t18", date: "2025-07-15", title: "Migration Midpoint Review", summary: "npm and Docker ahead of schedule. Helm in progress. CI/CD pipeline rewiring straightforward — no legacy tooling complications.", text: "Full transcript..." },
+      { id: "t19", date: "2025-10-22", title: "Completion Sign-off", summary: "All phases complete. Legacy registry shut down on 24 Oct — 7 days ahead of target. Anna confirmed full team on Cloudsmith. Post-migration audit passed.", text: "Full transcript..." },
+    ],
+    weeklyUpdates: [
+      { id: "u9-1", date: "2025-10-24", milestoneSnapshot: [
+        { label: "Kickoff", status: "complete", rag: "blue", endDate: "2025-02-21" },
+        { label: "Discovery", status: "complete", rag: "blue", endDate: "2025-04-04" },
+        { label: "Configuration", status: "complete", rag: "blue", endDate: "2025-05-30" },
+        { label: "Artifact Migration", status: "complete", rag: "blue", endDate: "2025-08-08" },
+        { label: "Rollout", status: "complete", rag: "blue", endDate: "2025-09-26" },
+        { label: "Decommission", status: "complete", rag: "blue", endDate: "2025-10-24" },
+      ], context: "Onboarding complete. All 6 phases delivered on or ahead of schedule. Legacy Artifactory instance shut down 24 Oct — 7 days early. Post-migration audit passed with no issues. Anna Kovacs confirmed full sign-off. Excellent engagement throughout." },
+    ],
+    rids: [],
+  },
 ];
 
 // ─── Derivation ───
@@ -1394,6 +1452,7 @@ function PortfolioTable({ customers, onSelectCustomer, onUpdateCustomer, tiers }
   const [filterPhase,setFilterPhase]=useState(null);
   const [filterTier,setFilterTier]=useState(null);
   const [filterMgr,setFilterMgr]=useState(null);
+  const [filterStatus,setFilterStatus]=useState("active");
   const [editingCustomer,setEditingCustomer]=useState(null);
 
   const allManagers = [...new Set(customers.map(c=>c.onboardingManager||"Unassigned"))].sort();
@@ -1413,6 +1472,8 @@ function PortfolioTable({ customers, onSelectCustomer, onUpdateCustomer, tiers }
 
   // Filter
   let filtered = customers;
+  if(filterStatus==="active") filtered=filtered.filter(c=>getTotalProgress(c.milestones)<100);
+  if(filterStatus==="complete") filtered=filtered.filter(c=>getTotalProgress(c.milestones)===100);
   if(filterRag) filtered=filtered.filter(c=>deriveCustomerRag(c.milestones)===filterRag);
   if(filterPhase) filtered=filtered.filter(c=>getCurrentPhase(c)===filterPhase);
   if(filterTier) filtered=filtered.filter(c=>c.tier===filterTier);
@@ -1451,6 +1512,10 @@ function PortfolioTable({ customers, onSelectCustomer, onUpdateCustomer, tiers }
   return <div>
     {/* Filter bar */}
     <div className="filter-bar">
+      <div style={{display:"flex",gap:"2px",background:"#1a1d28",borderRadius:"6px",padding:"2px",marginRight:"4px"}}>
+        {[["active","Active"],["complete","Complete"],["all","All"]].map(([v,l])=><button key={v} onClick={()=>setFilterStatus(v==="all"?null:v)} style={{fontSize:"10px",padding:"3px 9px",borderRadius:"4px",border:"none",cursor:"pointer",background:(filterStatus||"all")===v?"#2e3348":"transparent",color:(filterStatus||"all")===v?"#c5c8d6":"#565b6e",fontFamily:"'DM Sans',sans-serif",fontWeight:600}}>{l}</button>)}
+      </div>
+      <div className="filter-sep" />
       <span className="filter-label">RAG</span>
       {["green","amber","red","blue"].map(r=><button key={r} className={`filter-chip filter-chip-rag ${filterRag===r?`active-${r}`:""}`} onClick={()=>setFilterRag(toggle(filterRag,r))}>{RAG_LABELS[r]}</button>)}
       <div className="filter-sep" />
@@ -1462,7 +1527,7 @@ function PortfolioTable({ customers, onSelectCustomer, onUpdateCustomer, tiers }
       {allManagers.length>1&&<><div className="filter-sep" />
       <span className="filter-label">Manager</span>
       {allManagers.map(m=><button key={m} className={`filter-chip ${filterMgr===m?"active":""}`} onClick={()=>setFilterMgr(toggle(filterMgr,m))}>{m}</button>)}</>}
-      {(filterRag||filterPhase||filterTier||filterMgr)&&<button className="filter-chip" style={{color:"#818cf8",borderColor:"#6366f1"}} onClick={()=>{setFilterRag(null);setFilterPhase(null);setFilterTier(null);setFilterMgr(null);}}>Clear all</button>}
+      {(filterRag||filterPhase||filterTier||filterMgr)&&<button className="filter-chip" style={{color:"#818cf8",borderColor:"#6366f1"}} onClick={()=>{setFilterRag(null);setFilterPhase(null);setFilterTier(null);setFilterMgr(null);}}>Clear filters</button>}
     </div>
 
     <div style={{overflowX:"auto"}}>
@@ -1540,7 +1605,7 @@ function DashboardView({ customers, onSelectCustomer, onUpdateCustomer, tiers })
           <button className={`btn btn-sm ${dashShowProgress?"btn-primary":"btn-ghost"}`} onClick={()=>setDashShowProgress(p=>!p)} style={{fontSize:"11px"}}>{dashShowProgress?"Progress":"RAG Status"}</button>
         </div>
       </div>
-      <GanttChart customers={customers} onSelectCustomer={onSelectCustomer} showProgress={dashShowProgress} ganttView={ganttView} />
+      <GanttChart customers={customers.filter(c=>getTotalProgress(c.milestones)<100)} onSelectCustomer={onSelectCustomer} showProgress={dashShowProgress} ganttView={ganttView} />
     </div>
     <div className="card">
       <div className="card-header"><span className="card-title">Portfolio</span></div>
@@ -2047,9 +2112,10 @@ function ComplexityBadge({ complexity }) {
   return <span className={`complexity-badge complexity-${k}`}>{k}</span>;
 }
 
-function CapacityView({ customers, complexityConfig, onUpdateComplexity }) {
+function CapacityView({ customers, complexityConfig, onUpdateComplexity, onSelectCustomer, onUpdateCustomer }) {
   const [cfg, setCfg] = useState([...complexityConfig]);
   const [dirty, setDirty] = useState(false);
+  const COMPLEXITY_COLORS = {S:"#22c55e",M:"#0ea5e9",L:"#8b5cf6",XL:"#f59e0b",XXL:"#ef4444"};
 
   const cfgRow = key => cfg.find(r => r.key === key) || { capPct: 10, maxConcurrent: 6, hoursPerWeek: 4 };
   const isActive = c => getTotalProgress(c.milestones) < 100;
@@ -2131,18 +2197,29 @@ function CapacityView({ customers, complexityConfig, onUpdateComplexity }) {
                 {mgrActive.length === 0
                   ? <div style={{ fontSize: "12px", color: "#464b5e", fontStyle: "italic" }}>No active onboardings</div>
                   : mgrActive.map(c => {
-                    const row = cfgRow(c.complexity || "M");
+                    const cx = c.complexity || "M";
+                    const row = cfgRow(cx);
                     const cRag = deriveCustomerRag(c.milestones);
                     const prog = getTotalProgress(c.milestones);
+                    const cxColor = COMPLEXITY_COLORS[cx] || "#6b7088";
                     return (
                       <div key={c.id} style={{ display: "flex", alignItems: "center", gap: "10px", padding: "7px 0", borderTop: "1px solid #1a1d28" }}>
-                        <ComplexityBadge complexity={c.complexity || "M"} />
-                        <div style={{ flex: 1, minWidth: 0 }}>
+                        <select
+                          value={cx}
+                          onChange={e => onUpdateCustomer({...c, complexity: e.target.value})}
+                          onClick={e => e.stopPropagation()}
+                          title="Change complexity"
+                          style={{ background:`${cxColor}18`, color:cxColor, border:`1px solid ${cxColor}40`, borderRadius:"4px", fontSize:"10px", fontWeight:700, letterSpacing:"0.5px", padding:"2px 5px", cursor:"pointer", fontFamily:"'DM Sans',sans-serif", appearance:"none", WebkitAppearance:"none" }}
+                        >
+                          {COMPLEXITY_KEYS.map(k => <option key={k} value={k}>{k}</option>)}
+                        </select>
+                        <div style={{ flex: 1, minWidth: 0, cursor: "pointer" }} onClick={() => onSelectCustomer(c.id)}>
                           <div style={{ fontSize: "12.5px", color: "#c5c8d6", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c.name}</div>
                           <div style={{ fontSize: "11px", color: "#6b7088" }}>{row.capPct}% · {row.hoursPerWeek}h/wk</div>
                         </div>
                         <span className="rag-dot" style={{ background: RAG_COLORS[cRag], flexShrink: 0 }} />
                         <span style={{ fontSize: "11px", color: "#8b8fa3", fontFamily: "'JetBrains Mono',monospace", minWidth: "28px", textAlign: "right" }}>{prog}%</span>
+                        <button className="btn btn-ghost btn-sm" style={{ fontSize: "11px", flexShrink: 0 }} onClick={() => onSelectCustomer(c.id)}>View →</button>
                       </div>
                     );
                   })
@@ -2214,7 +2291,7 @@ function App() {
       <div className="main-body">
         {view==="dashboard"&&<DashboardView customers={customers} onSelectCustomer={id=>{setSelId(id);setView("customer");}} onUpdateCustomer={u=>setCustomers(customers.map(c=>c.id===u.id?u:c))} tiers={tiers} />}
         {view==="customer"&&cur&&<CustomerDetailView customer={cur} onUpdate={u=>setCustomers(customers.map(c=>c.id===u.id?u:c))} tiers={tiers} />}
-        {view==="capacity"&&<CapacityView customers={customers} complexityConfig={complexityConfig} onUpdateComplexity={setComplexityConfig} />}
+        {view==="capacity"&&<CapacityView customers={customers} complexityConfig={complexityConfig} onUpdateComplexity={setComplexityConfig} onSelectCustomer={id=>{setSelId(id);setView("customer");}} onUpdateCustomer={u=>setCustomers(customers.map(c=>c.id===u.id?u:c))} />}
         
         {/* Settings View - Grouped Phase Template & Tiers */}
         {view==="settings"&&(
