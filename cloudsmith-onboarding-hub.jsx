@@ -17,6 +17,12 @@ const DEFAULT_TIERS = [
   { id: "t3", label: "Ultra", color: "#f59e0b" },
 ];
 
+const DEFAULT_INDUSTRIES = [
+  "Artificial Intelligence", "Cloud Infrastructure", "Data & Analytics",
+  "Developer Tools", "Financial Services", "Healthcare", "Manufacturing",
+  "Media & Entertainment", "Retail", "Telecommunications",
+];
+
 const DEFAULT_COMPLEXITY = [
   { key: "S",   capPct: 10, maxConcurrent: 6, hoursPerWeek: 4  },
   { key: "M",   capPct: 15, maxConcurrent: 6, hoursPerWeek: 6  },
@@ -51,7 +57,7 @@ function mkCustomerMilestones(tmpl) {
 const SAMPLES = [
   {
     id: "c1", name: "Acme Corp", logo: "AC", tier: "Strategic",
-    complexity: "XXL",
+    complexity: "XXL", industry: "Manufacturing",
     startDate: "2025-07-01", targetDate: "2026-04-30",
     baselineCompletion: "2026-03-31", forecastCompletion: "2026-04-30",
     onboardingManager: "You",
@@ -113,7 +119,7 @@ const SAMPLES = [
   },
   {
     id: "c2", name: "NovaTech", logo: "NT", tier: "Ultra",
-    complexity: "S",
+    complexity: "S", industry: "Technology",
     startDate: "2025-10-06", targetDate: "2026-06-30",
     baselineCompletion: "2026-06-30", forecastCompletion: "2026-06-30",
     onboardingManager: "You",
@@ -159,7 +165,7 @@ const SAMPLES = [
   },
   {
     id: "c3", name: "FinanceFlow", logo: "FF", tier: "Strategic",
-    complexity: "XXL",
+    complexity: "XXL", industry: "Financial Services",
     startDate: "2025-04-14", targetDate: "2026-04-14",
     baselineCompletion: "2026-02-28", forecastCompletion: "2026-05-09",
     onboardingManager: "Sarah K",
@@ -215,7 +221,7 @@ const SAMPLES = [
   },
   {
     id: "c4", name: "DataStream Inc", logo: "DS", tier: "Enterprise",
-    complexity: "M",
+    complexity: "M", industry: "Data & Analytics",
     startDate: "2025-11-03", targetDate: null,
     baselineCompletion: null, forecastCompletion: null,
     onboardingManager: "Alex M",
@@ -243,7 +249,7 @@ const SAMPLES = [
   },
   {
     id: "c5", name: "MegaCorp", logo: "MC", tier: "Strategic",
-    complexity: "XXL",
+    complexity: "XXL", industry: "Retail",
     startDate: "2025-09-08", targetDate: null,
     baselineCompletion: null, forecastCompletion: null,
     onboardingManager: "Sarah K",
@@ -275,7 +281,7 @@ const SAMPLES = [
   },
   {
     id: "c6", name: "Vertex Cloud", logo: "VC", tier: "Enterprise",
-    complexity: "L",
+    complexity: "L", industry: "Cloud Infrastructure",
     startDate: "2025-12-01", targetDate: null,
     baselineCompletion: null, forecastCompletion: null,
     onboardingManager: "You",
@@ -307,7 +313,7 @@ const SAMPLES = [
   },
   {
     id: "c7", name: "Synapse AI", logo: "SA", tier: "Strategic",
-    complexity: "XL",
+    complexity: "XL", industry: "Artificial Intelligence",
     startDate: "2026-01-19", targetDate: null,
     baselineCompletion: null, forecastCompletion: null,
     onboardingManager: "Tom B",
@@ -337,7 +343,7 @@ const SAMPLES = [
   },
   {
     id: "c8", name: "ByteForge", logo: "BF", tier: "Ultra",
-    complexity: "S",
+    complexity: "S", industry: "Developer Tools",
     startDate: "2025-08-04", targetDate: null,
     baselineCompletion: null, forecastCompletion: null,
     onboardingManager: "Alex M",
@@ -374,7 +380,7 @@ const SAMPLES = [
   },
   {
     id: "c9", name: "PeakSystems", logo: "PS", tier: "Enterprise",
-    complexity: "M",
+    complexity: "M", industry: "Telecommunications",
     startDate: "2025-02-10", targetDate: "2025-10-31",
     baselineCompletion: "2025-10-31", forecastCompletion: "2025-10-24",
     onboardingManager: "Tom B",
@@ -795,8 +801,8 @@ function TierBadge({ tier, tiers }) {
 }
 
 // ─── Modals ───
-function AddCustomerModal({ onClose, onAdd, tmpl, tiers }) {
-  const [name,setName]=useState(""); const [tier,setTier]=useState(tiers[0]?.label||""); const [stakeholder,setStakeholder]=useState(""); const [sd,setSd]=useState(""); const [mgr,setMgr]=useState("You"); const [complexity,setComplexity]=useState("M");
+function AddCustomerModal({ onClose, onAdd, tmpl, tiers, industries }) {
+  const [name,setName]=useState(""); const [tier,setTier]=useState(tiers[0]?.label||""); const [stakeholder,setStakeholder]=useState(""); const [sd,setSd]=useState(""); const [mgr,setMgr]=useState("You"); const [complexity,setComplexity]=useState("M"); const [industry,setIndustry]=useState(industries[0]||"");
   return (
     <div className="modal-overlay" onClick={onClose}><div className="modal" onClick={e=>e.stopPropagation()}>
       <div className="modal-title">Add New Customer</div>
@@ -810,13 +816,14 @@ function AddCustomerModal({ onClose, onAdd, tmpl, tiers }) {
       </div>
       <div className="form-row">
         <div className="form-group"><label className="form-label">Complexity</label><select className="input select-input" value={complexity} onChange={e=>setComplexity(e.target.value)}>{COMPLEXITY_KEYS.map(k=><option key={k} value={k}>{k}</option>)}</select></div>
+        <div className="form-group"><label className="form-label">Industry</label><select className="input select-input" value={industry} onChange={e=>setIndustry(e.target.value)}><option value="">— None —</option>{industries.map(i=><option key={i} value={i}>{i}</option>)}</select></div>
       </div>
       <div className="form-row">
         <div className="form-group"><label className="form-label">Start Date *</label><input className="input" type="date" value={sd} onChange={e=>setSd(e.target.value)} /></div>
       </div>
       <div className="modal-actions">
         <button className="btn btn-ghost" onClick={onClose}>Cancel</button>
-        <button className="btn btn-primary" disabled={!name||!sd} onClick={()=>onAdd({id:"c"+Date.now(),name,logo:name.split(" ").map(w=>w[0]).join("").slice(0,2).toUpperCase(),tier,complexity,startDate:sd,targetDate:null,baselineCompletion:null,forecastCompletion:null,onboardingManager:mgr,owner:mgr,stakeholder,milestones:mkCustomerMilestones(tmpl),transcripts:[],weeklyUpdates:[],rids:[]})}>Add Customer</button>
+        <button className="btn btn-primary" disabled={!name||!sd} onClick={()=>onAdd({id:"c"+Date.now(),name,logo:name.split(" ").map(w=>w[0]).join("").slice(0,2).toUpperCase(),tier,complexity,industry,startDate:sd,targetDate:null,baselineCompletion:null,forecastCompletion:null,onboardingManager:mgr,owner:mgr,stakeholder,milestones:mkCustomerMilestones(tmpl),transcripts:[],weeklyUpdates:[],rids:[]})}>Add Customer</button>
       </div>
     </div></div>
   );
@@ -838,10 +845,11 @@ function AddTranscriptModal({ onClose, onAdd }) {
   );
 }
 
-function EditCustomerModal({ customer, onClose, onSave, tiers }) {
+function EditCustomerModal({ customer, onClose, onSave, tiers, industries }) {
   const [name,setName]=useState(customer.name);
   const [tier,setTier]=useState(customer.tier);
   const [complexity,setComplexity]=useState(customer.complexity||"M");
+  const [industry,setIndustry]=useState(customer.industry||"");
   const [stakeholder,setStakeholder]=useState(customer.stakeholder);
   const [mgr,setMgr]=useState(customer.onboardingManager||"");
   const [sd,setSd]=useState(customer.startDate||"");
@@ -856,6 +864,7 @@ function EditCustomerModal({ customer, onClose, onSave, tiers }) {
       </div>
       <div className="form-row">
         <div className="form-group"><label className="form-label">Complexity</label><select className="input select-input" value={complexity} onChange={e=>setComplexity(e.target.value)}>{COMPLEXITY_KEYS.map(k=><option key={k} value={k}>{k}</option>)}</select></div>
+        <div className="form-group"><label className="form-label">Industry</label><select className="input select-input" value={industry} onChange={e=>setIndustry(e.target.value)}><option value="">— None —</option>{(industries||[]).map(i=><option key={i} value={i}>{i}</option>)}{industry&&!(industries||[]).includes(industry)&&<option value={industry}>{industry}</option>}</select></div>
       </div>
       <div className="form-row">
         <div className="form-group"><label className="form-label">Key Stakeholder</label><input className="input" value={stakeholder} onChange={e=>setStakeholder(e.target.value)} /></div>
@@ -869,7 +878,7 @@ function EditCustomerModal({ customer, onClose, onSave, tiers }) {
         <div className="form-group"><label className="form-label">Forecast Completion</label><input className="input" type="date" value={fc} onChange={e=>setFc(e.target.value)} /><div style={{fontSize:"10px",color:"#464b5e",marginTop:"4px"}}>Current best estimate</div></div>
       </div>
       <div className="modal-actions"><button className="btn btn-ghost" onClick={onClose}>Cancel</button>
-        <button className="btn btn-primary" onClick={()=>onSave({...customer,name,tier,complexity,stakeholder,onboardingManager:mgr,startDate:sd||null,baselineCompletion:bc||null,forecastCompletion:fc||null,logo:name.split(" ").map(w=>w[0]).join("").slice(0,2).toUpperCase()})}>Save</button>
+        <button className="btn btn-primary" onClick={()=>onSave({...customer,name,tier,complexity,industry,stakeholder,onboardingManager:mgr,startDate:sd||null,baselineCompletion:bc||null,forecastCompletion:fc||null,logo:name.split(" ").map(w=>w[0]).join("").slice(0,2).toUpperCase()})}>Save</button>
       </div>
     </div></div>
   );
@@ -1060,6 +1069,26 @@ function TierSettings({ tiers, onSave, onClose }) {
       </div>
       <div style={{display:"flex",gap:"8px"}}><input className="input" value={nl} onChange={e=>setNl(e.target.value)} placeholder="New tier name..." onKeyDown={e=>e.key==="Enter"&&add()} style={{flex:1}} /><button className="btn btn-ghost" onClick={add}>Add</button></div>
       <div className="modal-actions"><button className="btn btn-ghost" onClick={onClose}>Cancel</button><button className="btn btn-primary" onClick={()=>onSave(items)}>Save Tiers</button></div>
+    </div>
+  );
+}
+
+function IndustrySettings({ industries, onSave, onClose }) {
+  const [items,setItems]=useState([...industries]);
+  const [nl,setNl]=useState("");
+  const add=()=>{if(nl.trim()&&!items.includes(nl.trim())){setItems([...items,nl.trim()].sort());setNl("");}};
+  return (
+    <div className="card" style={{maxWidth:"600px"}}>
+      <div className="card-header"><span className="card-title">Industries</span></div>
+      <p style={{fontSize:"12.5px",color:"#6b7088",marginBottom:"16px",lineHeight:1.6}}>Define the industry options available when creating or editing onboardings.</p>
+      <div style={{display:"flex",flexDirection:"column",gap:"4px",marginBottom:"14px"}}>
+        {items.map(ind=><div key={ind} style={{display:"flex",alignItems:"center",gap:"10px",padding:"10px 12px",background:"#181b26",borderRadius:"6px"}}>
+          <span style={{fontSize:"13px",color:"#e2e4eb",flex:1}}>{ind}</span>
+          <button onClick={()=>setItems(items.filter(x=>x!==ind))} style={{background:"none",border:"none",color:"#565b6e",cursor:"pointer",fontSize:"14px"}}>{"\u2715"}</button>
+        </div>)}
+      </div>
+      <div style={{display:"flex",gap:"8px"}}><input className="input" value={nl} onChange={e=>setNl(e.target.value)} placeholder="New industry..." onKeyDown={e=>e.key==="Enter"&&add()} style={{flex:1}} /><button className="btn btn-ghost" onClick={add}>Add</button></div>
+      <div className="modal-actions"><button className="btn btn-ghost" onClick={onClose}>Cancel</button><button className="btn btn-primary" onClick={()=>onSave(items)}>Save Industries</button></div>
     </div>
   );
 }
@@ -1445,7 +1474,7 @@ function CustomerGantt({ customer, showProgress = true }) {
 }
 
 // ─── Portfolio Table ───
-function PortfolioTable({ customers, onSelectCustomer, onUpdateCustomer, tiers }) {
+function PortfolioTable({ customers, onSelectCustomer, onUpdateCustomer, tiers, industries }) {
   const [sortKey,setSortKey]=useState("name");
   const [sortDir,setSortDir]=useState("asc");
   const [filterRag,setFilterRag]=useState(null);
@@ -1487,6 +1516,7 @@ function PortfolioTable({ customers, onSelectCustomer, onUpdateCustomer, tiers }
     switch(sortKey){
       case "name": av=a.name.toLowerCase(); bv=b.name.toLowerCase(); break;
       case "tier": av=a.tier; bv=b.tier; break;
+      case "industry": av=(a.industry||"").toLowerCase(); bv=(b.industry||"").toLowerCase(); break;
       case "manager": av=(a.onboardingManager||"").toLowerCase(); bv=(b.onboardingManager||"").toLowerCase(); break;
       case "phase": av=getCurrentPhase(a); bv=getCurrentPhase(b); break;
       case "rag": av=ragOrder[cRagA]; bv=ragOrder[cRagB]; break;
@@ -1535,6 +1565,7 @@ function PortfolioTable({ customers, onSelectCustomer, onUpdateCustomer, tiers }
         <thead><tr>
           <SortTh k="name">Customer</SortTh>
           <SortTh k="tier">Tier</SortTh>
+          <SortTh k="industry">Industry</SortTh>
           <SortTh k="manager">Manager</SortTh>
           <SortTh k="phase">Current Phase</SortTh>
           <SortTh k="rag">RAG</SortTh>
@@ -1554,6 +1585,7 @@ function PortfolioTable({ customers, onSelectCustomer, onUpdateCustomer, tiers }
             return <tr key={c.id} className="clickable" onClick={()=>onSelectCustomer(c.id)}>
               <td className="name-cell">{c.name}</td>
               <td><TierBadge tier={c.tier} tiers={tiers} /></td>
+              <td style={{color:"#8b8fa3",fontSize:"12px"}}>{c.industry||"\u2014"}</td>
               <td style={{color:"#8b8fa3"}}>{c.onboardingManager||"\u2014"}</td>
               <td style={{color:"#818cf8",fontSize:"11.5px"}}>{getCurrentPhase(c)}</td>
               <td><span className={`rag-pill rag-pill-${cRag}`} style={{fontSize:"9px",padding:"2px 7px"}}><span className="rag-dot rag-dot-sm" style={{background:RAG_COLORS[cRag]}} />{RAG_LABELS[cRag]}</span></td>
@@ -1575,12 +1607,12 @@ function PortfolioTable({ customers, onSelectCustomer, onUpdateCustomer, tiers }
 
     <div style={{fontSize:"11px",color:"#464b5e",marginTop:"10px"}}>{sorted.length} of {customers.length} onboardings shown</div>
 
-    {editingCustomer&&<EditCustomerModal customer={editingCustomer} onClose={()=>setEditingCustomer(null)} onSave={u=>{onUpdateCustomer(u);setEditingCustomer(null);}} tiers={tiers} />}
+    {editingCustomer&&<EditCustomerModal customer={editingCustomer} onClose={()=>setEditingCustomer(null)} onSave={u=>{onUpdateCustomer(u);setEditingCustomer(null);}} tiers={tiers} industries={industries} />}
   </div>;
 }
 
 // ─── Dashboard ───
-function DashboardView({ customers, onSelectCustomer, onUpdateCustomer, tiers }) {
+function DashboardView({ customers, onSelectCustomer, onUpdateCustomer, tiers, industries }) {
   const t=customers.length;
   const greens=customers.filter(c=>deriveCustomerRag(c.milestones)==="green").length;
   const ambers=customers.filter(c=>deriveCustomerRag(c.milestones)==="amber").length;
@@ -1609,13 +1641,13 @@ function DashboardView({ customers, onSelectCustomer, onUpdateCustomer, tiers })
     </div>
     <div className="card">
       <div className="card-header"><span className="card-title">Portfolio</span></div>
-      <PortfolioTable customers={customers} onSelectCustomer={onSelectCustomer} onUpdateCustomer={onUpdateCustomer} tiers={tiers} />
+      <PortfolioTable customers={customers} onSelectCustomer={onSelectCustomer} onUpdateCustomer={onUpdateCustomer} tiers={tiers} industries={industries} />
     </div>
   </div>;
 }
 
 // ─── Customer Detail ───
-function CustomerDetailView({ customer, onUpdate, tiers }) {
+function CustomerDetailView({ customer, onUpdate, tiers, industries }) {
   const [tab,setTab]=useState("plan");
   const [expanded,setExpanded]=useState(()=>{const ip=customer.milestones.findIndex(m=>m.status==="in-progress");return new Set(ip>=0?[ip]:[0]);});
   const [editItem,setEditItem]=useState(null); const [editIsL0,setEditIsL0]=useState(false);
@@ -1753,7 +1785,7 @@ function CustomerDetailView({ customer, onUpdate, tiers }) {
           <TierBadge tier={customer.tier} tiers={tiers} />
           <RagPill rag={cRag} onClick={()=>{}} />
         </div>
-        <div style={{fontSize:"12.5px",color:"#6b7088",marginTop:"3px"}}>{customer.onboardingManager&&<span>{customer.onboardingManager} &middot; </span>}{customer.stakeholder} &middot; {fmtDate(customer.startDate)} &rarr; {fmtDate(customer.targetDate)} &middot; {getTotalProgress(customer.milestones)}% complete{customer.forecastCompletion&&customer.baselineCompletion&&customer.forecastCompletion!==customer.baselineCompletion&&<span style={{color:"#f59e0b"}}> &middot; Forecast: {fmtDate(customer.forecastCompletion)}</span>}</div>
+        <div style={{fontSize:"12.5px",color:"#6b7088",marginTop:"3px"}}>{customer.industry&&<span>{customer.industry} &middot; </span>}{customer.onboardingManager&&<span>{customer.onboardingManager} &middot; </span>}{customer.stakeholder} &middot; {fmtDate(customer.startDate)} &rarr; {fmtDate(customer.targetDate)} &middot; {getTotalProgress(customer.milestones)}% complete{customer.forecastCompletion&&customer.baselineCompletion&&customer.forecastCompletion!==customer.baselineCompletion&&<span style={{color:"#f59e0b"}}> &middot; Forecast: {fmtDate(customer.forecastCompletion)}</span>}</div>
         <div style={{display:"flex",gap:"8px",marginTop:"6px"}}>
           <button className="btn btn-ghost btn-sm" onClick={()=>setEditCust(true)}>Edit details</button>
           <button className="btn btn-ghost btn-sm" onClick={()=>copyStatusUpdate(customer).then(()=>{setCopied(true);setTimeout(()=>setCopied(false),2000);})}>{copied?"✓ Copied":"Copy Status Update"}</button>
@@ -2103,7 +2135,7 @@ function CustomerDetailView({ customer, onUpdate, tiers }) {
     {editRid!==null&&<EditRidModal rid={editRid.id?editRid:null} milestones={customer.milestones} onClose={()=>setEditRid(null)} onSave={rid=>{const rids=customer.rids||[];const existing=rids.find(r=>r.id===rid.id);onUpdate({...customer,rids:existing?rids.map(r=>r.id===rid.id?rid:r):[...rids,rid]});setEditRid(null);}} onDelete={id=>{onUpdate({...customer,rids:(customer.rids||[]).filter(r=>r.id!==id)});setEditRid(null);}} />}
     {editItem&&<EditMilestoneModal item={editItem} isL0={editIsL0} onClose={()=>setEditItem(null)} onSave={handleEditSave} allMilestones={customer.milestones} />}
     {showAddTr&&<AddTranscriptModal onClose={()=>setShowAddTr(false)} onAdd={t=>{onUpdate({...customer,transcripts:[...customer.transcripts,t]});setShowAddTr(false);}} />}
-    {editCust&&<EditCustomerModal customer={customer} onClose={()=>setEditCust(false)} onSave={u=>{onUpdate(u);setEditCust(false);}} tiers={tiers} />}
+    {editCust&&<EditCustomerModal customer={customer} onClose={()=>setEditCust(false)} onSave={u=>{onUpdate(u);setEditCust(false);}} tiers={tiers} industries={industries} />}
   </div>;
 }
 
@@ -2243,6 +2275,7 @@ function App() {
   const [showAdd,setShowAdd]=useState(false);
   const [tmpl,setTmpl]=useState(DEFAULT_L0);
   const [tiers,setTiers]=useState(DEFAULT_TIERS);
+  const [industries,setIndustries]=useState(DEFAULT_INDUSTRIES);
   const [complexityConfig,setComplexityConfig]=useState(DEFAULT_COMPLEXITY);
 
   useEffect(()=>{
@@ -2289,8 +2322,8 @@ function App() {
         {view==="dashboard"&&<button className="btn btn-primary" onClick={()=>setShowAdd(true)}>+ New Customer</button>}
       </div>
       <div className="main-body">
-        {view==="dashboard"&&<DashboardView customers={customers} onSelectCustomer={id=>{setSelId(id);setView("customer");}} onUpdateCustomer={u=>setCustomers(customers.map(c=>c.id===u.id?u:c))} tiers={tiers} />}
-        {view==="customer"&&cur&&<CustomerDetailView customer={cur} onUpdate={u=>setCustomers(customers.map(c=>c.id===u.id?u:c))} tiers={tiers} />}
+        {view==="dashboard"&&<DashboardView customers={customers} onSelectCustomer={id=>{setSelId(id);setView("customer");}} onUpdateCustomer={u=>setCustomers(customers.map(c=>c.id===u.id?u:c))} tiers={tiers} industries={industries} />}
+        {view==="customer"&&cur&&<CustomerDetailView customer={cur} onUpdate={u=>setCustomers(customers.map(c=>c.id===u.id?u:c))} tiers={tiers} industries={industries} />}
         {view==="capacity"&&<CapacityView customers={customers} complexityConfig={complexityConfig} onUpdateComplexity={setComplexityConfig} onSelectCustomer={id=>{setSelId(id);setView("customer");}} onUpdateCustomer={u=>setCustomers(customers.map(c=>c.id===u.id?u:c))} />}
         
         {/* Settings View - Grouped Phase Template & Tiers */}
@@ -2298,12 +2331,13 @@ function App() {
           <div style={{ display: "flex", flexDirection: "column", gap: "24px", alignItems: "flex-start" }}>
             <MilestoneSettings milestones={tmpl} onSave={i=>{setTmpl(i);}} onClose={()=>setView("dashboard")} />
             <TierSettings tiers={tiers} onSave={i=>{setTiers(i);}} onClose={()=>setView("dashboard")} />
+            <IndustrySettings industries={industries} onSave={i=>{setIndustries(i);}} onClose={()=>setView("dashboard")} />
           </div>
         )}
       </div>
     </div>
 
-    {showAdd&&<AddCustomerModal onClose={()=>setShowAdd(false)} onAdd={nc=>{setCustomers([...customers,nc]);setShowAdd(false);setSelId(nc.id);setView("customer");}} tmpl={tmpl} tiers={tiers} />}
+    {showAdd&&<AddCustomerModal onClose={()=>setShowAdd(false)} onAdd={nc=>{setCustomers([...customers,nc]);setShowAdd(false);setSelId(nc.id);setView("customer");}} tmpl={tmpl} tiers={tiers} industries={industries} />}
   </div>;
 }
 
